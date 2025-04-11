@@ -1,0 +1,75 @@
+<html>
+<head>
+<title>$page_title</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+<div align="center">
+  <table width="600" border="0" cellspacing="0" cellpadding="0">
+    <tr> 
+      <td height="17"> 
+        <p align="center"><b><font face="Verdana, Arial, Helvetica, sans-serif"><br>
+          $body_title<br>
+          <br>
+          </font></b></p>
+      </td>
+    </tr>
+  </table>
+  <br>
+  <div align="center"> 
+  $menu_text
+  <br>
+    <table width="700" border="0" cellspacing="0" cellpadding="0">
+      <tr valign="top"> 
+        <td colspan="3">&nbsp;
+	<img src="images/ff3333_line_spacer.jpg" width="700" height="5"><br>
+	<img src="images/ff3333_spacer.jpg" width="700" height="5">
+	</td>
+      </tr>
+      <tr valign="top"> 
+        <td width="145">
+	  <br>
+	  <a href="http://laudeman.com/bmw_r850r/index.html">BMW R850R</a>
+	  <a href="http://laudeman.com/klr650/">Kawasaki KLR650</a>
+	  <a href="http://laudeman.com/hondavfr/">Honda VFR750F</a>
+          <a href="http://laudeman.com/hondavlx/">Honda Shadow VLX</a><br>
+          <a href="http://laudeman.com/bug.html">VW Bug</a><br>
+          <a href="http://laudeman.com/bmw2002.html">BMW 2002</a><br>
+          <a href="http://laudeman.com/cabrio/">VW Cabriolet</a><br>
+          <a href="http://laudeman.com/">laudeman.com</a><br>
+          <a href="http://infogizmo.com/">InfoGizmo</a> <br>
+	  <a href="http://laudeman.com/tom_mail.html">Contact Tom</a>
+	  <br>
+	  <br>
+	  <img src="images/ff3333_line_spacer.jpg" width="100%" height="5"><br>
+	  <img src="images/ff3333_spacer.jpg" width="100%" height="5">
+	  </td>
+        <td width="10" ><img src="images/ff3333_spacer.jpg" width="5" height="100%"><img src="images/white_spacer.jpg" width="5" height="5">
+	</td>
+        <td width="537" valign="top"><br>
+	{$dcc_start_outer start &lt;tr -2 stop &lt;/tr&gt; +2 } <img src="$image_dir/$s_name" border="0" alt="$alt_text" vspace="0" hspace="10" align="right" width="$s_width" height="$s_height">
+	  {$dcc_start_inner start &lt;a -2 stop &lt;/td&gt; +1 }$description
+          <br clear="all">
+          <br>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <table width="700" border="0" cellspacing="0" cellpadding="0">
+    <tr valign="top">
+      <td valign="top">&nbsp;</td>
+    </tr>
+    <tr valign="top"> 
+      <td valign="top"> 
+        <p>{$dcc_remainder start &lt;tr -2 stop &lt;/tr&gt; +2 }<img src="$image_dir/$s_name" border="0" align="right" alt="$alt_text" vspace="0" hspace="10" width="$s_width" height="$s_height">$description
+        </p>
+        <br>
+        <br clear=all>
+        <br>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Content Search</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <table border="0" cellpadding="3" cellspacing="0" width="800">
+      <tbody>
+        <tr>
+          <td bgcolor="#99cccc" valign="top">You have {{recordsfound}} site{{s}}. </td>
+        </tr>
+        <tr>
+          <td bgcolor="#99cccc" valign="top">
+            <div align="center">
+              <form action="./cmgr" method="post">
+                <input name="d_state" value="page_search" type="hidden">
+                <div style="text-align: left;">
+                  <input name="insert" value="Insert New Page (new site)" type="submit">
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <table border="1" cellpadding="0" cellspacing="0" width="800">
+      <tbody>
+        {{#dcc_site}}
+        <tr>
+          <td colspan="2" style="background-color: #eeeeee; vertical-align: bottom; padding-top: 16px;"> 
+            <a {{#siv}}id="scroll"{{/siv}} xid="{{site_name}}"></a>
+            <form action="/cmgr/#{{site_name}}" method="post" style="margin-bottom: 0px;">
+              <input name="d_state" value="page_search" type="hidden">
+              <input type="hidden" name="from_page" value="{{site_name}}">
+              <input name="site_name" value="{{site_name}}" type="hidden">
+              Site name: {{site_name}}
+              <input name="insert" value="Insert New Page" type="submit">
+              <input name="site_gen" value="Make site" type="submit">
+            </form>
+          </td>
+        </tr>
+        {{#dcc_page}}
+        <tr>
+          <td width="10%">
+            <nobr>{{menu}} ({{page_order}})</nobr></td>
+          <td width="90%">
+            <form action="/cmgr" method="post" style="margin-bottom: 0px;">
+              <input name="d_state" value="page_search" type="hidden">
+              <input name="page_pk" value="{{page_pk}}" type="hidden">
+              <div align="justify">
+                <input name="item" value="Edit content" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <input name="edit" value="Edit page" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              </div>
+            </form>
+          </td>
+        </tr>
+        {{/dcc_page}}
+        {{/dcc_site}}
+      </tbody>
+    </table>
+    Template: page_search.html state: {{d_state}}
+    <script>
+      document.getElementById("scroll").scrollIntoView();
+    </script>
+  </body>
+</html>

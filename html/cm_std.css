@@ -1,0 +1,344 @@
+/*
+   http://www.alistapart.com/articles/negativemargins/
+   Oldthink: Must have position set to relative in order for contained boxes to behave
+*/
+
+ .lrg_img {
+    width: 90%;
+    height: auto;
+}
+
+/*
+@media all {
+    .lrg_img {
+	width: 200px;
+	height: 128px;
+    }
+}
+*/
+
+.ximg_holder {
+    padding: 0.5em;
+    position: relative; 
+    float: right;
+    text-align: right;
+    width: 320px;
+    height: 240px;
+    border: #669933;
+    border-style: double;
+}
+
+img {
+    padding: 0.5em;
+    position: relative; 
+    /* border: #669933; */
+    /* border-style: double; */
+}
+
+.entry { 
+    position: relative; 
+    overflow: hidden;
+     font-family: Arial, Helvetica, sans-serif;
+     font-size: 1em;
+     text-align: justify;
+     /* margin-top: 0.5em; */
+     /* margin-bottom: 2em; */
+     /* margin-left: 2em; */
+     /* margin-right: 0.5em; */
+     /* border: #669933;   */
+     /* border-style: solid;   */
+ }
+
+#entry { 
+    position: relative; 
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    text-align: justify;
+    margin-top: 0.5em;
+    margin-bottom: 2em;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+ }
+
+
+body {
+    background: grey; 
+    background-color: #FFFFFF; 
+    margin: 0; /*  does not default to zero. */
+    position: relative; 
+    /* display: block;  */
+    /*      max-width: 98%;  */
+    width: 100%;
+    text-align: left; 
+    
+    /* min-height: 10em;  */
+    
+    font-family: Arial, Helvetica, sans-serif; 
+    font-size: 1em; 
+}
+
+#nav {
+    /* the nav div has to be float left, but everything else can be
+       whatever we need 
+       */
+    position: relative; 
+    float: left;
+    z-index: 5;
+    width: 22%;
+    left: 1%;
+    right: 18%;
+    
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em; 
+    text-align: justify;  
+
+    padding-bottom: 0.5em;
+    
+    border-color: #339966;  
+    border-style: inset; 
+    border-right-width: 0.5em;   
+    border-top-width: 0em;   
+    border-left-width: 0em;   
+    border-bottom-width: 0.5em;  
+    
+}
+/* The container floats and has a negative left margin which is the
+essential ingredient in the liquid layout. The content is a div to
+hold the content and correct for the negative left margin. */
+
+/* inner div */
+
+#content {
+    position: relative; 
+    float: left;
+    /* the content div has a positive margin */
+    left: 2%; 
+    right: 70%; 
+    width: 72%; 
+}
+
+/* media="only screen and (max-device-width: 480px)" */
+
+/* nov 2011 seems to work with Palm, and doesn't seem to effect real
+  web browsers. Nav size is unchanged, so I expect users to zoom,
+  scroll side ways to fill screen with content, then scroll up and
+  down.  */
+
+@media only screen and (max-device-width: 480px) {
+    #content {
+	position: relative; 
+	float: left;
+	/* the content div has a positive margin */
+	left: 2%; 
+	right: 40%; 
+	width: 42%; 
+    }
+}
+
+h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+  /* max-width: 800px; */
+  /* line-height: 2.0ex; */
+  margin-top: 5px;
+  margin-bottom: 5px;
+  /* border: #669933;
+     border-style: double; */
+}
+
+.pstyle {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12pt;
+    /* max-width: 800px; */
+    /* margin-top: 0px; */
+    /*border: #669933;
+      border-style: double; */
+} 
+
+
+/* paragraph p tag */
+
+p {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    text-align: justify;
+    /*  margin-bottom: 0.2em; */
+    /* max-width: 800px; */
+    /*  border: #669933; */
+    /*  border-style: solid; */
+} 
+
+
+#wrap {
+    /* background: lightblue; */
+    /* float:left; */
+     background: blue; 
+    width: 900px;
+}
+
+.small_left {
+    width: 10em;
+    max-width: 20%;
+    vertical-align: top;
+
+    margin-top: -1.0em;
+    margin-right: 0.5em;
+    margin-bottom: 0.5em;
+    margin-left: 0.0em;
+
+    padding-top: 0.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    padding-bottom: 0.5em;
+
+    border-color: #669933;
+    border-style: inset;
+    border-right-width: 0.5em;
+    border-top-width: 0em;
+    border-left-width: 0em;
+    border-bottom-width: 0.5em;
+}
+
+.large_right {
+    width: 60em;
+    max-width: 75%;
+    vertical-align: top;
+    /*top: 0;*/
+    /*left: auto;*/
+    /*right: -5px;*/
+    padding: 0.5em;
+    /*border: #669933;*/
+    /*border-style: solid;*/
+}
+
+
+#header {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    text-align: justify;
+    position: relative;
+    display: block;
+    float:right;
+    clear:both;
+    /* padding: 0.5em; */
+    margin-left: -10em; /*0.5em; /* 11.5em;*/
+    margin-bottom: 0em;
+    border: #669933;
+    border-style: double;
+    border-top-width: 0em;
+    border-bottom-width: 0.4em;
+    border-right-width: 1.0em;
+    border-left-width: 1.0em;
+}
+
+#middle {
+    position: relative;
+    margin-left: 12em;
+    border-color: #669933;
+    border-style: double;
+    /*border-style: none;*/
+    border-top-width: 0.4em;
+    border-bottom-width: 1.0em;
+    border-right-width: 1.0em;
+    border-left-width: 1.0em;
+}
+
+.main {
+    clear: right; 
+    /* max-width: 800px; */
+    /*
+      Setting width causes IE to incorrectly display the floating menu
+      Therefore this workaround from http://www.svendtofte.com/code/max_width_in_ie/
+      doesn't work. Use the same concept with margin-right.
+      width: expression(document.body.clientWidth > 800? "800px": "auto" );
+    */
+
+    padding: 0px 0px 0px 0px;
+    margin-top: 15px;
+    margin-left: 10px;
+    margin-right: 15px;
+
+    /* IE max-width workaround. */
+    /* margin-right: expression(document.body.clientWidth > 800? (document.body.clientWidth-830) : "15px" ); */
+    /* border: #669933;
+       border-style: double; */
+ }
+
+.menu {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12pt;
+    clear:both; 
+    width: 170px; 
+    float: left;
+    /* top right bottom left */
+    padding: 0px 0px 10px 0px;
+    margin: 20px 10px 10px 10px;
+    /*border: #669933;
+      border-style: double; */
+}
+
+
+.old_main {
+    position: absolute;
+    visibility: visible;
+    width: 6in;
+    max-width: 6in;
+    min-width: 5in;
+    left: 2in;
+    top: 1.25in;
+    /* clip:    rect(   ); */
+    overflow: visible;
+}
+
+#xnav {
+    /* position: fixed; */
+    /*  width: 10em; */
+    /* height: 100%; */
+    /* display: none; */
+    float: left;
+    /* clear: both; */
+    background-image: url(cowpea_genomics/images/cowpea_bg_4.jpg);
+
+    /*  right: auto; */
+    /*  bottom: auto; */
+    /* float: left; */
+    /* display: block; */
+    /* line-height: 120%; */
+    /* max-width: 780px; */
+    /* IE doesn't support max-width. For the header we can use a simple
+       workaround. */
+    /* width: expression(document.body.clientWidth > 800? "800px": "auto" ); */
+    /*   min-height: 70px; */
+    /*
+      margin-left: 0px;
+      margin-top: 0px;
+      margin-right: 10px;
+      padding-left: 15px;
+      padding-top: 5px;
+    */
+    /* padding: 0px 5px 0px 5px; */
+    /* margin: 5px 5px 5px 5px; */
+    /* clip:        rect(   ); */
+    /* visibility: visible; */
+    /* position: relative; */
+    border: #669933;
+    border-style: double;
+}
+
+/* outer div not used */
+
+#container {
+    float: right;
+
+    /* This div is in front, so setting background will obscure the nav */
+    background: pink; 
+    width: 70%; 
+    margin-left: 200px;  
+
+    /* margin-left: 0.5em; */
+    /* margin-right: 0.5em; */
+    /* min-height: 10em; */
+    
+    /*border: #663399;*/
+    /*border-style: double;*/
+}

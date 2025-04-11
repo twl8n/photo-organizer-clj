@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>Confirm Record Delete</title>
+  </head>
+  <body bgcolor="#FFFFFF">
+    Confirm delete for record {{bf_pk}}.
+    <form action="/cmgr" method="POST">
+      <input type="hidden" name="graph_name" value="faqmgr">
+      <input type="hidden" name="next_node" value="{{next_node}}">
+      <input type=submit name="cancel" value="Cancel"><br><br>
+    </form>
+
+    <form action="/cmgr" method="POST">
+      <input type="hidden" name="bf_pk" value="{{bf_pk}}">
+      <input type="hidden" name="graph_name" value="{{faqmgr}}">
+      <input type="hidden" name="next_node" value="{{next_node}}">
+      <input type=submit name="confirm" value="Delete"><br><br>
+    </form>
+
+  </body>
+</html>

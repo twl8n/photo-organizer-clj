@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <!-- template image_t.html -->
+    <title>{{page_title}}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../cm_std.css" type="text/css">
+  </head>
+  <body bgcolor="#FFFFFF" text="#000000">
+    {{&nav}}
+    <div id="content">
+      <p>
+	<b>{{body_title}}</b> 
+      </p>
+      <p>
+	<nobr>
+          {{#prev}}<a href="{{prev-name}}">Previous image</a>{{/prev}}{{^prev}}(no previous image){{/prev}} |
+          <a href="{{page_name}}#{{ordinal}}">Back</a> |
+          {{#next}}<a href="{{next-name}}">Next image</a>{{/next}}{{^next}}(no next image){{/next}}
+        </nobr>
+      </p>
+      <p>
+        {{&description}}
+      </p>
+      <p>
+	<img src="images/{{image_dir}}/{{image_name}}" border="0" alt="{{alt_text}}" vspace="0" hspace="10" class="lrg_img">
+      </p>
+      <p>
+	{{&menu_text}}
+      </p>
+      <hr>
+    </div>
+  </body>
+</html>

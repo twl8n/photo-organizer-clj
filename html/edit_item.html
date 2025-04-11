@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <title>Edit item</title>
+  </head>
+  <body bgcolor="#FFFFFF">
+    <form action="/cmgr" method="POST">
+      <p> 
+        <input type="hidden" name="d_state" value="{{d_state}}">
+        <input type="hidden" name="con_pk" value="{{con_pk}}">
+        <input type="hidden" name="page_pk" value="{{page_pk}}">
+        <input type="hidden" name="page_fk" value="{{page_fk}}">
+      </p>
+      <p>page_pk: {{page_pk}}<br>
+        con_pk: {{con_pk}}<br>
+        Description:<br>
+        <textarea name="description" rows="{{drows}}" cols="60">{{description}}</textarea><br>
+        <br>
+        <input type="submit" name="continue" value="Save & Continue">&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="submit" name="save" value="Save">&nbsp;&nbsp;&nbsp;&nbsp;    
+        <input type="submit" name="next" value="Save & Edit Next">
+        <br>
+        <br>
+        image alt text: <input type="text" name="alt_text" value="{{alt_text}}" size="60"><br><br>
+        item order: <input type="text" name="item_order" value="{{item_order}}" size="5">(decimal numbers ok)<br><br>
+        valid_content: <input type="text" name="valid_content" value="{{valid_content}}" size="5">(zero or one)<br><br>
+        image_name: {{image_name}}<br><br>
+        <img src="{{site_path}}/images/{{image_dir}}/{{s_name}}" width="{{s_width}}" height="{{s_height}}"><br><br>
+        page_pk/page_fk: {{page_fk}}<br>
+        image_width: {{image_width}}<br>
+        image_height: {{image_height}}<br>
+        s_name: {{s_name}}<br>
+        s_width: {{s_width}}<br>
+        s_height: {{s_height}}<br>
+        <input type="submit" name="continue" value="Save & Continue">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <input type=submit name="save" value="Save">
+        &nbsp;&nbsp;&nbsp;&nbsp;    
+        <input type="submit" name="next" value="Save & Edit Next">
+        <br>
+      </p>
+    </form>
+    <br>
+    Template:edit_item.html
+  </body>
+</html>

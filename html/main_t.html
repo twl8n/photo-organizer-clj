@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <title>{{page_title}}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../cm_std.css" type="text/css">
+  </head>
+  <body bgcolor="#FFFFFF" text="#000000">
+    {{&nav}}
+    <div id="content">
+      <div align="center">{{body_title}}</div>
+      {{&menu_text}}
+      <hr>
+      <div class="entry">
+        {{#start_inner}}
+        <a href="{{pf_name}}" id="{{ordinal}}">
+          <img src="./images/{{image_dir}}/{{s_name}}"
+               width="{{s_width}}"
+               height="{{s_height}}"
+               border="0"
+               align="right"
+               alt="{{alt_text}}"
+               vspace="0"
+               hspace="10">
+        </a>
+        {{&description}}
+	<br clear="all">
+        {{/start_inner}}
+      </div>
+      {{#remainder}}
+      <div class="entry">
+          <a href="{{pf_name}}" id="{{ordinal}}">
+            <img src="./images/{{image_dir}}/{{s_name}}"
+               width="{{s_width}}"
+               height="{{s_height}}"
+               border="0"
+               align="right"
+               alt="{{alt_text}}"
+               vspace="0"
+               hspace="10">
+        </a>
+        {{&description}}
+	<br clear="all">
+      </div>
+      {{/remainder}}
+    </div> <!-- end content -->
+  </body>
+  <!-- template main_t.html -->
+</html>

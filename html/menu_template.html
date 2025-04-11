@@ -1,0 +1,17 @@
+<div align="center">
+  <table width="100%" cellpadding="4">
+    {{#menu_line}}
+    <tr>
+      <!-- {c $menu_line start <tr -2 stop /tr> +2} -->
+      <!-- {c $first_col start <td +1 stop </tr +1} -->
+      <!-- Uncomment the line below to debug -->
+      <!-- pb:{{page_break}} po:{{page_order}} or:{{ordinal}} -->
+      {{#first_col}}
+      <td><nobr><a href="{{page_name}}">{{menu}}</a></nobr></td>
+      {{/first_col}}
+    </tr>
+    {{/menu_line}}
+  </table>
+</div>
+
+

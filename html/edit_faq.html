@@ -1,0 +1,28 @@
+<html>
+<head>
+<title>edit_faq.html Record</title>
+</head>
+<body bgcolor="#FFFFFF">
+<form action="/cmgr" method="POST">
+  {$con_pk start &lt;form -2 stop form&gt; +2}
+    <input type="hidden" name="next_node" value="$next_node">
+    <input type="hidden" name="con_pk" value="$con_pk">
+<table width="600" border="0">
+   <tr>
+      <td>Question</td>
+      <td><textarea name="description" rows=$qrows cols=60>$description</textarea></td>
+    </tr>
+    <tr>
+      <td>Answer</td>
+      <td><textarea name="answer" rows=$arows cols=60>$answer</textarea></td>
+    </tr>
+    <tr>
+      <td>Extra keywords</td>
+      <td><textarea name="keywords" rows=$krows cols=60>$keywords</textarea></td>
+    </tr>
+</table>
+<br><input type="submit" name="continue" value="Save & Continue">&nbsp;&nbsp;&nbsp;&nbsp;
+<input type=submit name="save" value="Save"><br>
+</form>
+</body>
+</html>

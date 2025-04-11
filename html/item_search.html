@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Item (Content) Search</title>
+    <!-- item_search.html -->
+  </head>
+  <body bgcolor="#FFFFFF">
+    <table border=0 cellspacing=0 cellpadding=3 width="600">
+      <tr> 
+        <td bgcolor="#99CCCC" valign=top>Generic content search returned {{recordsfound}} page{{s}}.
+        </td>
+      </tr>
+      <tr> 
+        <td bgcolor="#99CCCC" valign=top> 
+          <div align="center">
+            <form action="/cmgr" method=POST>
+	      <input type="hidden" name="d_state" value="{{d_state}}">
+	      <input type="hidden" name="page_pk" value="{{page_pk}}">
+              <input type="hidden" name="site_name" value="{{site_name}}">
+              <input type=submit name=Submit value="Search">
+            </form>
+          </div>
+          <br>
+          <table border=0 cellpadding=0 cellspacing=0 width="100%">
+	    <tr valign="top">
+	      <td>
+	        <form action="/cmgr" method=POST>
+                  <input type="hidden" name="d_state" value="page_search">
+                  <input type="hidden" name="from_page" value="{{site_name}}">
+                  <input type="submit" name="submit" value="Site/page list">
+                </form>
+                <br>
+	        page_pk: {{page_pk}}
+	      </td>
+	      <td>
+                <form action="/cmgr" method="post">
+	          <input type="hidden" name="d_state" value="{{d_state}}">
+	          <input type="hidden" name="page_pk" value="{{page_pk}}">
+                  <input type="hidden" name="site_name" value="{{site_name}}">
+	          <input type="submit" name="page_gen" value="Make page">&nbsp;&nbsp;&nbsp;
+                </form>
+	      </td>
+	      <td>
+                <form action="/cmgr" method="post">
+	          <input type="hidden" name="d_state" value="{{d_state}}">
+	          <input type="hidden" name="page_pk" value="{{page_pk}}">
+	          <input type="hidden" name="site_name" value="{{site_name}}">
+                  <input type="submit" name="insert" value="New item">&nbsp;&nbsp;&nbsp;
+                </form>
+	      </td>
+	      <td>
+                <form action="/cmgr" method="post">
+	          <input type="hidden" name="d_state" value="{{d_state}}">
+	          <input type="hidden" name="page_pk" value="{{page_pk}}">
+	          <input type="submit" name="auto_gen" value="Auto Gen Items">
+                </form>
+	        <a href="{{site_path}}/{{page_name}}" target="preview">Preview {{page_name}}</a>
+	      </td>
+	    </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table border=0 cellspacing=0 cellpadding=3 width="600">
+      {{#content}}
+      <tr> 
+        <td bgcolor="#EEEEEE">
+          <form action="/cmgr" method="post">
+	    <input type="hidden" name="d_state" value="{{d_state}}">
+	    <input type="hidden" name="con_pk" value="{{con_pk}}">
+            <input type="hidden" name="site_name" value="{{site_name}}">
+	    <input type="submit" name="edit" value="Edit">&nbsp;&nbsp;&nbsp;
+          </form>
+          <img src="{{site_path}}/images/{{image_dir}}/{{s_name}}" width="{{s_width}}" height="{{s_height}}" align="right"> 
+          Image directory: {{image_dir}}<br>
+          con_pk: {{con_pk}}<br>
+          image_name:{{image_name}}<br>
+          site_path: {{site_path}}<br>
+          s_name: {{s_name}}<br>
+          description: {{&desc-html}}<br>
+          alt text: {{alt_text}}<br>
+          item_order: {{item_order}}<br>
+          Valid: {{valid_content}}<br>
+          <!-- renamed dcc_con_pk to content -->
+          <!-- {c {{dcc_con_pk start &lt;tr -2 stop &lt;/tr&gt; +2} -->
+          <br clear="all">
+          <hr>
+        </td>
+      </tr>
+      {{/content}}
+    </table>
+    Template: item_search.html  
+  </body>
+</html>
