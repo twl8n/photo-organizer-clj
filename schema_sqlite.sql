@@ -16,13 +16,15 @@ create table "photo"
         FOREIGN KEY(place_fk) REFERENCES place(place_pk)
         );
 
--- linking table, one photo to many person
-
 -- select person.name
 -- from person, photo_person
 -- where photo_fk={photo_pk}
 -- and person_fk=person_pk;
 
+-- Do we need ordering, left to right, front to back, in the photo? (yes)
+-- Or x,y coords in the photo? (Maybe)
+
+-- linking table, one photo to many person
 create table "photo_person"
     (
         photo_fk integer, -- one photo to many photo_person 
@@ -31,12 +33,14 @@ create table "photo_person"
         FOREIGN KEY(person_fk) REFERENCES person(person_pk)
 );
 
+-- a person found in at least one photo.
 create table "person"
     (
 	person_pk integer primary key autoincrement,
         name text
 );
 
+-- place where photo was taken
 create table "place"
     (
 	place_pk integer primary key autoincrement,
@@ -50,8 +54,8 @@ create table "place"
         latitude text
 );
 
--- virtual film roll
-
+-- virtual film roll, might be a real, physical film roll.
+-- rename to "roll" and add "virtual" boolean?
 create table "vroll"
     (
         vroll_pk integer primary key autoincrement,
