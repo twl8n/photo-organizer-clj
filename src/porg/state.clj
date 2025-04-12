@@ -68,7 +68,7 @@
   
 
 (defn test_config []
-  (let [ready-data (test-config)
+  (let [ready-data {:vals (test-config)}
         html-result (my-render (slurp "html/test_config.html") ready-data)]
     (reset! html-out html-result)))
 
