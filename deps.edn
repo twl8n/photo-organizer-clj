@@ -2,15 +2,15 @@
 {:deps
  {
   ;; By specifying a clojure version in :deps, we will override the installed, default version.
-  ;; org.clojure/clojure {:mvn/version "1.9.0"}
   org.clojure/clojure {:mvn/version "1.10.2"}
   org.xerial/sqlite-jdbc {:mvn/version "3.21.0"}
+  com.layerware/hugsql {:mvn/version "0.4.8"}
   de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
-  seancorfield/next.jdbc {:mvn/version "1.1.613"} ;; Requires clojure 1.10.2
-  ring {:mvn/version "1.8.2"}
+  org.clojure/java.jdbc {:mvn/version "0.7.5"}
+  ring/ring {:mvn/version "1.8.2"}
   ;; machine/machine {:local/root "../machine"}
   github-twl8n/machine {:git/url "https://github.com/twl8n/machine"
-                        :sha "818759f86b8589e8143e18e800967ddeda26567d"}
+                        :sha "fabdf3f8329cc8e25217bcee4a460b1fe8fb04c0"}
   }
 
  :aliases 
@@ -32,7 +32,7 @@
    ;; clj.native-image dependency to a :local/root instead of :git/url.
 
    :extra-deps
-   {clj.native-image
+   {clj.native-image/clj.native-image
     {:git/url "https://github.com/taylorwood/clj.native-image.git"
      :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}}}}
 

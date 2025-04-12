@@ -1,5 +1,5 @@
-(ns cmgr.core
-  (:require [cmgr.state]
+(ns porg.core
+  (:require [porg.state :as state]
             [machine.core]
             [machine.util :refer :all]
             [clojure.string :as str]
@@ -13,25 +13,23 @@
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 (def true-ns (ns-name *ns*))
 
+;; 2025-04-11 migrate read-config to sqlite using default db path and name.
+
 ;; This would be simpler (?), more secure, more reliable if it only accepted certain keys.
 ;; export-path
 ;; db-path
 (defn read-config
   "Read .cmgr in the user's home dir. Strip comments and blank lines."
   []
-  (into {} conj
-        (map (fn [xx] (let [[kstr vstr] (str/split xx #"\s+")] {(keyword kstr) vstr}))
-             (remove #(re-matches #"^\s*;;.*|^\s*$" %)
-                     (re-seq #"(?m)^.*$"
-                             (slurp (str(System/getenv "HOME") "/.cmgr")))))))
+  {:db-path (str (System/getenv "HOME") "/porg.db")})
 
 
-;; Be specific that we only do dynamic requests to the /cmgr endpoint.
+;; Be specific that we only do dynamic requests to the /porg endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
 ;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
 (defn handler
   [request]
-  (if (not (some? (re-matches #".*/cmgr[/]*" (:uri request))))
+  (if (not (some? (re-matches #".*/porg[/]*" (:uri request))))
     ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
     (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]
       ;; (print (format "uri: %s\n" (:uri request))) (flush)
@@ -41,19 +39,23 @@
                         (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
                         (assoc yy
                                :d_state (keyword (:d_state yy))))]
-      (cmgr.state/set-params temp-params)
+      (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)
       (run! #(machine.util/add-state %) (keys temp-params))
-      (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) cmgr.state/table)]
+
+      ;; 2025-04-11 original code, seems to default :page_search as starting state
+      ;; (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) porg.state/table)]
+
+      (let [res (machine.util/traverse (or (:d_state temp-params) :test_config) porg.state/table)]
         (when res (prn res)))
 
       ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
       ;; uri back to what we want, clearing any anchor/id values, and any other cruft.
-      ;; NOTE: "./cmgr" just creates a mess, post-pending "/cmgr" on the uri. 
+      ;; NOTE: "./porg" just creates a mess, post-pending "/porg" on the uri. 
       {:status 200
-       :headers {"Location" "/cmgr" "Content-Type" "text/html"}
-       :body @cmgr.state/html-out})))
+       :headers {"Location" "/porg" "Content-Type" "text/html"}
+       :body @porg.state/html-out})))
 
 (comment
   ;; This might not be what we want to fix a uri.
@@ -63,7 +65,7 @@
   )
 
 (defn get-conf [ckey]
-  (ckey @cmgr.state/config))
+  (ckey @porg.state/config))
 
 ;; Ignore favicon.ico
 ;; Name prefix local- to distinguish it from ring.middleware
@@ -94,26 +96,33 @@
 
 ;; We need to dynamically discover the export path at run time, NOT compile time, therefor we must
 ;; use defn and not def (as you will see in every other ring server example). 
-(defn make-app [& args]
-  (-> handler
-      (local-wrap-ignore-favicon)
-      (wrap-file (get-conf :export-path) {:allow-symlinks? true
-                                          :prefer-handler? true})
-      (wrap-multipart-params)
-      (wrap-params)))
+
+;; 2025-04-11 We aren't using the export path now, maybe never
+      ;; (wrap-file (get-conf :export-path) {:allow-symlinks? true
+      ;;                                     :prefer-handler? true})
+
+(comment 
+  (defn make-app [& args]
+    (-> handler
+        (local-wrap-ignore-favicon)
+        (wrap-multipart-params)
+        (wrap-params)))
 
 
-;; Unclear how defonce and lein ring server headless will play together.
-(defn ds []
-  (defonce server (ringa/run-jetty (make-app) {:port 8080 :join? false})))
+  ;; Unclear how defonce and lein ring server headless will play together.
+  (defn ds []
+    (defonce server (ringa/run-jetty (make-app) {:port 8080 :join? false})))
+  )
 
 (defn -main
   "Parse the states.dat file."
   [& args]
   ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
   (in-ns true-ns)
-  (cmgr.state/set-config (read-config))
-  (print (format "%s\n" @cmgr.state/config))
-  (ds)
-  (prn "server: " server)
-  (.start server))
+  (porg.state/set-config (read-config))
+  (print (format "%s\n" @porg.state/config))
+  (print (state/test-config))
+  ;; (ds)
+  ;;  (prn "server: " server)
+  ;; (.start server)
+  )

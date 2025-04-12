@@ -1,5 +1,15 @@
 
 -- sqlite3 
+
+create table "config"
+    (
+        name text,
+        value text
+);
+
+insert into config (name,value)
+values ("test", 12345);
+
 -- GIS?
 
 -- This is an individual photo record. 
@@ -10,7 +20,7 @@ create table "photo"
 	vroll_order double,
 	pathfile_name text, -- relative to the collection root path
 	description text,
-        photo_date text -- ISO 8601 date/time '2025-05-29 14:16:00'
+        photo_date text, -- ISO 8601 date/time '2025-05-29 14:16:00'
         place_fk integer,
         FOREIGN KEY(vroll_fk) REFERENCES vroll(vroll_pk),
         FOREIGN KEY(place_fk) REFERENCES place(place_pk)
@@ -28,7 +38,7 @@ create table "photo"
 create table "photo_person"
     (
         photo_fk integer, -- one photo to many photo_person 
-        person_fk integer
+        person_fk integer,
         FOREIGN KEY(photo_fk) REFERENCES photo(photo_pk),
         FOREIGN KEY(person_fk) REFERENCES person(person_pk)
 );
