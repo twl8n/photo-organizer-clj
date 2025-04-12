@@ -101,18 +101,17 @@
       ;; (wrap-file (get-conf :export-path) {:allow-symlinks? true
       ;;                                     :prefer-handler? true})
 
-(comment 
-  (defn make-app [& args]
-    (-> handler
-        (local-wrap-ignore-favicon)
-        (wrap-multipart-params)
-        (wrap-params)))
+
+(defn make-app [& args]
+  (-> handler
+      (local-wrap-ignore-favicon)
+      (wrap-multipart-params)
+      (wrap-params)))
 
 
   ;; Unclear how defonce and lein ring server headless will play together.
-  (defn ds []
-    (defonce server (ringa/run-jetty (make-app) {:port 8080 :join? false})))
-  )
+(defn ds []
+  (defonce server (ringa/run-jetty (make-app) {:port 8080 :join? false})))
 
 (defn -main
   "Parse the states.dat file."
@@ -122,7 +121,6 @@
   (porg.state/set-config (read-config))
   (print (format "%s\n" @porg.state/config))
   (print (state/test-config))
-  ;; (ds)
-  ;;  (prn "server: " server)
-  ;; (.start server)
-  )
+  (ds)
+  (prn "server: " server)
+  (.start server))
