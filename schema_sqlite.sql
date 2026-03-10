@@ -12,17 +12,18 @@ values ("test", 12345);
 
 -- GIS?
 
--- This is an individual photo record. 
+-- This is an individual photo record.
+-- photo_pk used a foreign key in vroll_order linking table
+-- photo_pk used a foreign key in photo_person linking table
 create table "photo"
     (
 	photo_pk integer primary key autoincrement,
-	vroll_fk integer,
-	vroll_order double,
 	pathfile_name text, -- relative to the collection root path
 	description text,
         photo_date text, -- ISO 8601 date/time '2025-05-29 14:16:00'
+        photo_min_date text, -- iso 8601 date/time
+        photo_max_date text, -- iso 8601 date/time
         place_fk integer,
-        FOREIGN KEY(vroll_fk) REFERENCES vroll(vroll_pk),
         FOREIGN KEY(place_fk) REFERENCES place(place_pk)
         );
 
@@ -44,11 +45,13 @@ create table "photo_person"
 );
 
 -- a person found in at least one photo.
+-- every person presumably has a single canonical image.
 create table "person"
     (
 	person_pk integer primary key autoincrement,
-        name text
-);
+        name text,
+        canonical_photo_fk integer
+        );
 
 -- place where photo was taken
 create table "place"
@@ -62,10 +65,21 @@ create table "place"
         zip_code text,
         longitude text,
         latitude text
-);
+        );
 
--- virtual film roll, might be a real, physical film roll.
--- rename to "roll" and add "virtual" boolean?
+-- Order of photo within a virtual roll.
+-- linking table between photo and vroll.
+create table "vroll_order"
+    (
+        photo_fk integer,
+	vroll_fk integer,
+	vroll_order double,
+        FOREIGN KEY(vroll_fk) REFERENCES vroll(vroll_pk),
+        FOREIGN KEY(photo_fk) REFERENCES photo(photo_pk)
+        );
+
+-- virtual film roll, might be a real, physical film roll, virtual roll, or virtual album.
+-- rename to "roll" and add "virtual" boolean? (No, because also album. Maybe "album" boolean.)
 create table "vroll"
     (
         vroll_pk integer primary key autoincrement,

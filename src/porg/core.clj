@@ -8,7 +8,8 @@
             [ring.util.response :as ringu]
             [ring.middleware.file :refer [wrap-file]]
             [ring.middleware.params :refer [wrap-params]]
-            [ring.middleware.multipart-params :refer [wrap-multipart-params]])
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
+            [clojure.java.shell :as shell])
   (:gen-class))
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 (def true-ns (ns-name *ns*))
@@ -109,9 +110,10 @@
       (wrap-params)))
 
 
-  ;; Unclear how defonce and lein ring server headless will play together.
+;; Unclear how defonce and lein ring server headless will play together.
+;; Use port 8081 since my content manager uses port 8080. Unlikely both will be running at the same time, but...
 (defn ds []
-  (defonce server (ringa/run-jetty (make-app) {:port 8080 :join? false})))
+  (defonce server (ringa/run-jetty (make-app) {:port 8081 :join? false})))
 
 (defn -main
   "Parse the states.dat file."
@@ -123,4 +125,5 @@
   (print (state/test-config))
   (ds)
   (prn "server: " server)
-  (.start server))
+  (.start server)
+  (shell/sh "open" "http://localhost:8081/porg"))
