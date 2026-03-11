@@ -27,14 +27,16 @@ Can Clojure read command line args? Use command line arg to switch to dev config
 
 todo:
 
+- 2026-03-10 Fix that in-ns nonsense in machine. It wasn't necessary here, and is probably a red herring over there too.
+
 - update deps to recent versions
 
-- Add an "open" call to open the browser automatically.
+x Add an "open" call to open the browser automatically.
 
 - Physically rotate files that have a virtual rotation. Not all software works properly with rotation meta
 data.
 
-- write a better quick description of the V5 state table in state.clj
+! write a better quick description of the V5 state table in state.clj
 
 - allow/require naked base url. Remove/change the regex match #".*/porg[/]*". Either redirect '/porg` or make
   it like it never existed.
@@ -52,4 +54,4 @@ Run the app:
 
 The program runs, and your default web browser will open with:
 
-`http://localhost:8080/porg`
+`http://localhost:8081/porg`

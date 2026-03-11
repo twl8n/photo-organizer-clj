@@ -6,5 +6,13 @@
     {{#vals}}
     Field: {{name}} has value: {{value}}</br>
     {{/vals}}
+    {{whichfn}} {{d_state}} {{s_one}}  {{s_two}}
+    <form action="./porg" method="post">
+      <input name="d_state" value="alt" type="hidden">
+      <div style="text-align: left;">
+        <input name="s_one" value="One" type="submit">
+        <input name="s_two" value="Two" type="submit">
+      </div>
+    </form>
   </body>
 </html>

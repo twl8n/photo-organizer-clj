@@ -38,17 +38,14 @@
     (let [temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
-                        (assoc yy
-                               :d_state (keyword (:d_state yy))))]
+                        (assoc yy :d_state (or (keyword (:d_state yy)) (porg.state/default-state))))]
       (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)
       (run! #(machine.util/add-state %) (keys temp-params))
-
-      ;; 2025-04-11 original code, seems to default :page_search as starting state
-      ;; (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) porg.state/table)]
-
-      (let [res (machine.util/traverse (or (:d_state temp-params) :test_config) porg.state/table)]
+      ;; Assume that :d_state always has some valid value. I wonder if the state table supports nil as value?
+      ;; (get yy nil) works but (nil yy) does not, so nil is apparently a valid map key.
+      (let [res (machine.util/traverse (:d_state temp-params) porg.state/table)]
         (when res (prn res)))
 
       ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
@@ -122,7 +119,7 @@
   (in-ns true-ns)
   (porg.state/set-config (read-config))
   (print (format "%s\n" @porg.state/config))
-  (print (state/test-config))
+  (print (state/test-config-data))
   (ds)
   (prn "server: " server)
   (.start server)

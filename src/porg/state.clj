@@ -22,7 +22,7 @@
 
 (hugsql/def-sqlvec-fns (clojure.java.io/as-file "full.sql"))
 
-(defn test-config
+(defn test-config-data
   "Simply return the test key from the config table in the db."
   []
   (let [conn {:connection (jdbc/get-connection dbspec-sqlite)}]
@@ -66,13 +66,27 @@
 (defn set-params [xx]
   (reset! params xx))
   
-
 (defn test_config []
-  (let [ready-data {:vals (test-config)}
+  ;; debug
+  (pp/pprint @params)
+  (let [ready-data {:vals (test-config-data) 
+                    :d_state (:d_state @params) 
+                    :s_one (:s_one @params) 
+                    :s_two (:s_two @params)
+                    :whichfn "test_config"}
         html-result (my-render (slurp "html/test_config.html") ready-data)]
     (reset! html-out html-result)))
 
-
+(defn alt []
+  ;; debug
+  (pp/pprint @params)
+  (let [ready-data {:vals (test-config-data) 
+                    :d_state (:d_state @params) 
+                    :s_one (:s_one @params)
+                    :s_two (:s_two @params)
+                    :whichfn "alt"}
+        html-result (my-render (slurp "html/test_config.html") ready-data)]
+    (reset! html-out html-result)))
 
 (defn newline-to-br [some-text]
   (str/replace some-text #"[\n\r]{2}" "<br>"))
@@ -109,10 +123,20 @@
 (comment
   (machine.util/verify-table table)
   (machine.util/check-table table)
-  (machine.util/check-infinite :page_search table)
+  (machine.util/check-infinite :test_config table)
   )
 
 ;; Quick description of v5 state transition table format.
+;; Hashmap of state names
+;; Values in the hashmap are lists (of lists) of transitions for that state.
+;; Transition list is: state-key function-symbol next-state
+;; If state-key exists in data known to the state machine then true and perform the action.
+;; some-fn-symbol is a function that performs the action.
+;; If the function returns true, then transitionn to :other-state.
+;; If action returns false, iterate through transitions.
+;; State-key true is always true.
+;; If the :other-state (next state) is nil, continue to iterate over transitions.
+
 (comment
   ;; This sort of describes the map of lists of lists that is the state table.
   {:starting-default-state
@@ -124,10 +148,31 @@
    [[:true side-effect-fn-b nil]
     [:true render-html-change-state nil]]}
   )
+(comment
+  (def params {:foo 1 :bar 2})
+  (assoc params :d_state (keyword "test_config"))
+  (def yy {nil 1 :d_state (keyword "new_config")})
+  (keyword (or (:d_state yy) "test_config"))
+   ;; :alt
+   ;; [[:s_one alt :exit]
+   ;;  [:true (fn [] (change_state :test_config)) :test_config]]
+  )
 
-;; Default is page_search. (How do you know that? Hard coded in core.clj?)
+(defn noop [] true)
+
+;; Fn returning the defaul starting state :test_conf
+(defn default-state [] :test_config)
+
+;; next state must be a keyword, probably also needs to exist in the table.
+;; nil is ok as a fn-symbol
+;; Don't confuse or conflate d_state with the current state.
 (def table
   {:test_config
    [[:true test_config nil]]
+   :alt
+   [[:s_one alt :exit]
+    [:true nil :test_config]]
+   :exit
+   [[:true nil nil]]
    })
 
