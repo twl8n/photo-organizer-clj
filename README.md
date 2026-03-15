@@ -1,7 +1,6 @@
 # photo-organizer-clj
 Organize a photo collection. Identify, group, and edit: location, person(s), film roll.
 
-
 Web application, multiuser. 
 
 Eventually, bidirectional copy relevant data into/from image metadata for each file.
@@ -55,3 +54,38 @@ Run the app:
 The program runs, and your default web browser will open with:
 
 `http://localhost:8081/porg`
+
+#### dev quickstart
+
+```
+cd src/photo-organizer-clj
+clj -M:nREPL -m nrepl.cmdline
+```
+
+In emacs:
+cider-connect accepting defaults
+
+Open a code buffer and:
+cider-load-buffer C-c C-k
+cider-repl-set-ns C-c M-n n
+
+Split window and open the cider buffer, work as usual.
+
+cider keystrokes to remember
+C-c M-n         cider-ns-map
+C-c M-n n       cider-repl-set-ns
+C-c C-k         cider-load-buffer
+C-c C-e         cider-eval-last-sexp
+C-c M-i         cider-inspect
+C-c M-z         cider-load-buffer-and-switch-to-repl-buffer
+
+
+
+#### config
+
+```
+cd ~/
+sqlite3 porg.db
+```
+
+`insert into config values ('pic_root_path', '/users/zeus/photos');`

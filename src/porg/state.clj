@@ -17,13 +17,19 @@
 
 ;; Hugsql macros must be outside defn and come before any mention of functions that they will create at
 ;; compile time (or is it run time?). Two functions will be created for each :name in full.sql.
-
+;; 2026-03-15 todo Need to document/fix path to full.sql hard coded here!
 (hugsql/def-db-fns (clojure.java.io/as-file "full.sql"))
-
 (hugsql/def-sqlvec-fns (clojure.java.io/as-file "full.sql"))
 
+;; {:test "12345"}
+(defn config-data
+  "Return hashmap keyed by :name. Records are name,value pairs from the config table in the db."
+  []
+  (let [conn {:connection (jdbc/get-connection dbspec-sqlite)}]
+    (into {} (map (fn [aa] [(keyword (:name aa)) (:value aa)]) (sql-config conn)))))
+
 (defn test-config-data
-  "Simply return the test key from the config table in the db."
+  "Return all the name,value pairs from the config table in the db."
   []
   (let [conn {:connection (jdbc/get-connection dbspec-sqlite)}]
     (sql-config conn)))
@@ -94,22 +100,11 @@
 (defn clear_continue []
  (swap! params #(dissoc % :continue)))
 
-(defn edit_new_page []
-  (let [html-result (my-render (slurp "html/edit_page.html")
-                                      {:d_state "edit_new_page"
-                                       :menu ""
-                                       :page_title ""
-                                       :body_title ""
-                                       :page_name ""
-                                       :search_string ""
-                                       :image_dir ""
-                                       :site_name (:site_name @params "") ;; Add new page from existing site or brand new.
-                                       :site_path ""
-                                       :page_order 0.0
-                                       :valid_page 1
-                                       :external_url 0
-                                       :ext_zero "selected"
-                                       :ext_one ""})]
+(defn draw-start-page []
+  (let [pic_root_path (:pic_root_path (config-data))
+        html-result (my-render (slurp "html/start_page.html")
+                                      {:d_state "s_start_page"
+                                       :pic_root_path pic_root_path})]
     (reset! html-out html-result)))
 
 (defn delete_page []
@@ -161,13 +156,16 @@
 (defn noop [] true)
 
 ;; Fn returning the defaul starting state :test_conf
-(defn default-state [] :test_config)
+(defn default-state [] :start_page)
 
+(declare draw-start-page)
 ;; next state must be a keyword, probably also needs to exist in the table.
 ;; nil is ok as a fn-symbol
 ;; Don't confuse or conflate d_state with the current state.
 (def table
-  {:test_config
+  {:start_page
+   [[:true draw-start-page nil]]
+   :test_config
    [[:true test_config nil]]
    :alt
    [[:s_one alt :exit]

@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Start Page</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <table border="0" cellpadding="3" cellspacing="0" width="800">
+      <tbody>
+        <tr>
+          <td bgcolor="#99cccc" valign="top">
+            Photo directory is {{pic_root_path}}<br>
+            You have {{recordsfound}} images.
+            
+          </td>
+        </tr>
+        <tr>
+          <td bgcolor="#99cccc" valign="top">
+            <div align="center">
+              <form action="./cmgr" method="post">
+                <input name="d_state" value="s_start_page" type="hidden">
+                <div style="text-align: left;">
+                  <input name="s_scan" value="Scan or rescan directory tree" type="submit">
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <br>
+    Template: start_page.html d_state: {{d_state}}
+    <script>
+      document.getElementById("scroll").scrollIntoView();
+    </script>
+  </body>
+</html>
