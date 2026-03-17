@@ -10,41 +10,19 @@
             [clojure.pprint :as pp]
             [hugsql.core :as hugsql]))
 
-(def dbspec-sqlite
-  {:classname   "org.sqlite.JDBC"
-   :subprotocol "sqlite"
-   :subname     (str (System/getenv "HOME") "/porg.db")})
-
 ;; Hugsql macros must be outside defn and come before any mention of functions that they will create at
 ;; compile time (or is it run time?). Two functions will be created for each :name in full.sql.
 ;; 2026-03-15 todo Need to document/fix path to full.sql hard coded here!
 (hugsql/def-db-fns (clojure.java.io/as-file "full.sql"))
 (hugsql/def-sqlvec-fns (clojure.java.io/as-file "full.sql"))
 
-;; {:test "12345"}
-(defn config-data
-  "Return hashmap keyed by :name. Records are name,value pairs from the config table in the db."
-  []
-  (let [conn {:connection (jdbc/get-connection dbspec-sqlite)}]
-    (into {} (map (fn [aa] [(keyword (:name aa)) (:value aa)]) (sql-config conn)))))
-
-(defn test-config-data
-  "Return all the name,value pairs from the config table in the db."
-  []
-  (let [conn {:connection (jdbc/get-connection dbspec-sqlite)}]
-    (sql-config conn)))
-
-;; Work around a feature (or bug) in clostache that turns $ into \$ and \ into \\
-;; but only in data fields.
-(defn my-render [template data]
-  (str/replace
-   (clostache/render template data)
-   #"[\\]{1}(.)" "$1"))
-
 ;; System wide config, with some defaults.
 (def config 
   (atom {:export-path (System/getenv "HOME")
          :db-path (System/getenv "HOME")}))
+
+;; I think db is a "connection"
+(def db {:dbtype "sqlite" :dbname (format "%s/porg.db" (:db-path @config))})
 
 (defn set-config
   "Arg is a map. We need :export-path, :db-path. Override compile time defaults by calling read-config at runtime."
@@ -58,9 +36,6 @@
 
 (def html-out (atom ""))
 
-;; I think db is a "connection"
-(def db {:dbtype "sqlite" :dbname (format "%s/porg.db" (:db-path @config))})
-
 ;; 2021-01-31 We could use rs/as-unqualified-lower-maps, but since we're using lowercase in our schema,
 ;; and since we're used to sql drivers returning the case shown in the schema (or uppercase) we don't have to
 ;; force everything to lower at this time.
@@ -71,7 +46,67 @@
 
 (defn set-params [xx]
   (reset! params xx))
-  
+
+;; convert {:name "test", :value "12345"} to  {:test "12345"}
+(defn config-data
+  "Return hashmap keyed by :name. Records are name,value pairs from the config table in the db. See sql-config in full.sql."
+  []
+    (into {} (map (fn [aa] [(keyword (:name aa)) (:value aa)]) (sql-config db))))
+
+(defn test-config-data
+  "Return all the name,value pairs from the config table in the db."
+  []
+    (sql-config db))
+
+;; Work around a feature (or bug) in clostache that turns $ into \$ and \ into \\
+;; but only in data fields.
+(defn my-render [template data]
+  (str/replace
+   (clostache/render template data)
+   #"[\\]{1}(.)" "$1"))
+
+;; 2026-03-16 user code below this line.
+
+
+;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
+;; The symlink is hard coded, created manually. Should be in config, created by this app.
+;; image-path-base The directory path is hard coded here, and should be in config.
+(defn parse-file-list
+  "Read a list of files, run a regex to keep image file names, remove the rest. Assumes some other code has created the file of names."
+  [filename]
+  (with-open [rdr (clojure.java.io/reader filename)]
+    (reduce conj [] (->> (line-seq rdr)
+                         (map #(second (re-matches #"/Volumes/.*family/(.*):\s+image.*" %)))
+                         (remove nil?)))))
+
+(defn populate-db [filename-list]
+  "Given a list of filenames, call function sql-insert-filename created by hugsql. See full.sql."
+  (doseq [pfn filename-list]
+    (sql-insert-filename db {:pathfile_name pfn})))
+
+;; sqlite> insert into config values ("pfl-file", "/Users/zeus/files.txt");
+(defn populate-db-wrapper []
+  (populate-db (take 5 (parse-file-list (:pfl-file (config-data))))))
+
+(defn draw-photo-page []
+  (println "draw-photo-page")
+  (pp/pprint @params)
+  (let [photo_pk (or (:photo_pk @params) (sql-firstnon db)) ;; sql-firstnon could return nil. Fix that.
+        pic_root_path (:pic_root_path (config-data))
+        photo-rec (sql-photo-select db {:photo_pk photo_pk})
+        html-result (my-render
+                     (slurp "html/photo_page.html")
+                     (merge {:d_state "s_start_page" :pic_root_path pic_root_path }
+                            photo-rec))]
+    (reset! html-out html-result)))
+
+;; Use and 'or' so that this will work if @params is uninitialized.
+;; (set-params {:d_state :s_photo_page, :photo_pk "31", :s_edit "Edit Photo"})
+(defn next-photo []
+  (set-params (merge @params
+                     (or (sql-next-photo-pk db {:photo_pk (:photo_pk @params)})
+                         (sql-firstnon db)))))
+
 (defn test_config []
   ;; debug
   (pp/pprint @params)
@@ -98,28 +133,30 @@
   (str/replace some-text #"[\n\r]{2}" "<br>"))
 
 (defn clear_continue []
- (swap! params #(dissoc % :continue)))
+  (swap! params #(dissoc % :continue)))
 
 (defn draw-start-page []
+  (println "draw-start-page")
+  (pp/pprint @params)
   (let [pic_root_path (:pic_root_path (config-data))
-        html-result (my-render (slurp "html/start_page.html")
-                                      {:d_state "s_start_page"
-                                       :pic_root_path pic_root_path})]
+        html-result (my-render
+                     (slurp "html/start_page.html")
+                     (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
+                            (or (sql-firstnon db) {:pathfile_name ""})
+                            (sql-records-found db)))]
     (reset! html-out html-result)))
 
-(defn delete_page []
-  (println "fn delete_page does nothing yet."))
+;; This could take several minutes to run. We won't have any feedback on the progress.
+;; Probably better to run it manually outside the app.
+(defn all-pic-files []
+  (shell/sh "./pic-list.sh"))
 
 (defn get_wh [full_name]
   (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
                                       (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
     [(Integer. width) (Integer. height)]))
 
-(comment
-  (machine.util/verify-table table)
-  (machine.util/check-table table)
-  (machine.util/check-infinite :test_config table)
-  )
+(defn noop [] true)
 
 ;; Quick description of v5 state transition table format.
 ;; Hashmap of state names
@@ -143,28 +180,31 @@
    [[:true side-effect-fn-b nil]
     [:true render-html-change-state nil]]}
   )
+
 (comment
-  (def params {:foo 1 :bar 2})
-  (assoc params :d_state (keyword "test_config"))
-  (def yy {nil 1 :d_state (keyword "new_config")})
-  (keyword (or (:d_state yy) "test_config"))
-   ;; :alt
-   ;; [[:s_one alt :exit]
-   ;;  [:true (fn [] (change_state :test_config)) :test_config]]
+  ;; functions from machine.util to sanity check the table
+  (machine.util/verify-table table)
+  (machine.util/check-table table)
+  (machine.util/check-infinite :test_config table)
   )
 
-(defn noop [] true)
+(declare draw-start-page)
 
-;; Fn returning the defaul starting state :test_conf
+;; Change the return value to be your default starting state. Was :test_conf
 (defn default-state [] :start_page)
 
-(declare draw-start-page)
 ;; next state must be a keyword, probably also needs to exist in the table.
 ;; nil is ok as a fn-symbol
 ;; Don't confuse or conflate d_state with the current state.
 (def table
   {:start_page
-   [[:true draw-start-page nil]]
+   [[:s_populate_db populate-db-wrapper nil]
+    [:s_edit nil :s_photo_page]
+    [:true draw-start-page nil]]
+   :s_photo_page
+   [[:s_cancel nil :start_page]
+    [:s_next next-photo nil]
+    [:true draw-photo-page nil]]
    :test_config
    [[:true test_config nil]]
    :alt

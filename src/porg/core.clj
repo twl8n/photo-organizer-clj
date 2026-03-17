@@ -39,6 +39,7 @@
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
                         (assoc yy :d_state (or (keyword (:d_state yy)) (porg.state/default-state))))]
+      (pp/pprint temp-params)
       (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)
@@ -99,11 +100,17 @@
       ;; (wrap-file (get-conf :export-path) {:allow-symlinks? true
       ;;                                     :prefer-handler? true})
 
+;; symbolic links work with wrap-file.
+;; For the file: /Volumes/external/my-family/2023-08-29/DSC_0001.JPG
+;; create a symbolic link: ln -s /Volumes/external/my-family/ image
+;; call the middleware: (wrap-file "image")
+;; the working url is: http://localhost:8081/2023-08-29/DSC_0001.JPG
 
 (defn make-app [& args]
   (-> handler
       (local-wrap-ignore-favicon)
       (wrap-multipart-params)
+      (wrap-file "image")
       (wrap-params)))
 
 

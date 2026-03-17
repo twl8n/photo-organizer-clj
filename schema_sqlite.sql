@@ -15,15 +15,17 @@ values ("test", 12345);
 -- This is an individual photo record.
 -- photo_pk used a foreign key in vroll_order linking table
 -- photo_pk used a foreign key in photo_person linking table
+-- pathfile_name is relative to the ring web server's idea of image root path. See wrap-file  in defn make-app in core.clj.
 create table "photo"
     (
 	photo_pk integer primary key autoincrement,
-	pathfile_name text, -- relative to the collection root path
+	pathfile_name text, -- see comment above
 	description text,
         photo_date text, -- ISO 8601 date/time '2025-05-29 14:16:00'
         photo_min_date text, -- iso 8601 date/time
         photo_max_date text, -- iso 8601 date/time
         place_fk integer,
+        UNIQUE(pathfile_name),
         FOREIGN KEY(place_fk) REFERENCES place(place_pk)
         );
 

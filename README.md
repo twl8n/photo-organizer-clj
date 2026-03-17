@@ -26,6 +26,17 @@ Can Clojure read command line args? Use command line arg to switch to dev config
 
 todo:
 
+- 2026-03-16 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
+- 2026-03-16  The symlink is hard coded, created manually. Should be in config, created by this app.
+;; The directory path is hard coded here, and should be in config.
+
+
+- 2026-03-16 Create thumbnails and decide if they will reside in the db (yes) or on disk in a parallel directory tree
+
+- 2026-03-16 Refactor state.clj for clarity and logical progression. 
+
+- 2026-03-16 Condense and unify sql db connectors in state.clj
+
 - 2026-03-10 Fix that in-ns nonsense in machine. It wasn't necessary here, and is probably a red herring over there too.
 
 - update deps to recent versions
@@ -45,6 +56,8 @@ quickstart:
 ```
 cd ~/
 sqlite3 porg.db < src/photo-organizer-clj/schema_sqlite.sql
+sqlite3 porg.db
+insert into config values ("image-path-base", "/Volumes/external/family/");
 ```
 
 Run the app:
@@ -62,6 +75,55 @@ cd src/photo-organizer-clj
 clj -M:nREPL -m nrepl.cmdline
 ```
 
+#### NetPBM 
+
+# This "rotate 90" is -90 aka 90 CCW
+> jpegtopnm -dumpexif IMG_0494.JPG 2>&1 > /dev/null | grep -i orient
+jpegtopnm: Orientation  : Rotate 90
+
+# jpegtran "-rotate 90" is +90 aka 90 CW
+10213  jpegtran -rotate 90 IMG_0494.JPG > tmp.jpg
+
+0494 is rotated 6, and this conversion produces a non-rotated image:
+jpegtopnm IMG_0494.JPG | pamscale -height=1936 - | pnmtojpeg - > IMG_R0494.JPG
+
+jpegtopnm -traceexif IMG_0494.JPG > tmp.pnm
+
+> jpegtopnm -dumpexif IMG_0494.JPG > tmp.pnm
+jpegtopnm: WRITING PPM FILE
+jpegtopnm: EXIF INFO:
+jpegtopnm: Camera make  : Apple
+jpegtopnm: Camera model : iPod touch
+jpegtopnm: Date/Time    : 2023:04:01 13:20:29
+jpegtopnm: Resolution   : 72.000000 x 72.000000
+jpegtopnm: Orientation  : Rotate 90
+jpegtopnm: Flash used   : No
+jpegtopnm: Exposure time: 0.0000 s
+jpegtopnm: Shutter speed: 1/128
+jpegtopnm: Aperture     : f/2.0
+jpegtopnm: ISO equiv.   : 5000
+jpegtopnm: Exposure bias: 0.00
+jpegtopnm: Metering Mode: spot
+jpegtopnm: Exposure     : program (auto)
+jpegtopnm: Focal length :  3.0mm
+
+# redirect stderr to stdout, and stdout to /dev/null, new stdout will be piped:
+jpegtopnm -dumpexif IMG_0494.JPG 2>&1 > /dev/null | perl -ne 'print $_ if m/.*Orientation.*(\d+)$/;'
+
+# make a rotated jped of the right size to confirm size and rotation
+jpegtopnm IMG_3065.JPG |pnmrotate 270 - | pamscale -xyfit 2592 1936 - | ppmtojpeg - > tmp.jpg
+jpegtopnm IMG_3323.JPG | ppmtojpeg - > tmp.jpg
+
+jpegtopnm < IMG_3323.JPG | pnmscale -xsize=%s | pnmtojpeg > %s
+
+jpegtopnm IMG_3065.JPG | pamscale -height=1936 - | pnmpaste - 551 1 tmp.ppm > IMG_3065.ppm
+
+# works, pixel x y are zero based apparently
+jpegtopnm IMG_3065.JPG | pnmrotate -90 - | pamscale -xyfit 2592 1936 - | pnmpaste - 550 0 tmp.ppm | pnmtojpeg - > IMG_3065R.jpg
+
+
+#### Development in Emacs
+
 In emacs:
 cider-connect accepting defaults
 
@@ -78,7 +140,7 @@ C-c C-k         cider-load-buffer
 C-c C-e         cider-eval-last-sexp
 C-c M-i         cider-inspect
 C-c M-z         cider-load-buffer-and-switch-to-repl-buffer
-
+M-x -r-c-bu RET cider-repl-clear-buffer
 
 
 #### config
@@ -89,3 +151,8 @@ sqlite3 porg.db
 ```
 
 `insert into config values ('pic_root_path', '/users/zeus/photos');`
+
+find /Volumes/external/family/2023-08-29 -type f > ~/tmp.txt
+file --mime-type -f ~/tmp.txt > ~/tmp2.txt
+
+
