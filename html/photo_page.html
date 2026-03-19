@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Start Page</title>
+    <title>Edit Photo Info</title>
     <style>
       td:nth-child(1) {  
           text-align: right;
@@ -42,7 +42,7 @@
                     </tr><tr>
                       <td>Latest Date</td><td> <input name="photo_max_date" value="{{photo_max_date}}" type="text"></td>
                     </tr><tr>
-                      <td>Place:</td><td></td>
+                      <td>Place:</td><td><input name="place_fk" value="{{place_fk}}" type="text"></td>
                     </tr><tr>
                       <td>People:</td><td></td>
                     </tr><tr>
@@ -61,6 +61,8 @@
                   <br>
                   <input name="s_next" value="Edit Next Photo" type="submit">
                   <br>
+                  <input name="s_save" value="Save" type="submit">
+                  <br>
                   <input name="s_cancel" value="Cancel/Back" type="submit">
                 </div>
               </form>
@@ -71,7 +73,7 @@
     </table>
     <br>
     <br>
-    Template: start_page.html d_state: {{d_state}}
+    Template: {{page_name}} d_state: {{d_state}}
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

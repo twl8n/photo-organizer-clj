@@ -25,10 +25,13 @@ where description is null order by photo_pk limit 1;
 select * from photo
 where photo_pk = :photo_pk;
 
--- :name sql-next-photo-pk :? :1
--- :doc input a photo_pk and return the next photo_pk
-select photo_pk from photo
-where photo_pk > :photo_pk order by photo_pk limit 1;
+-- :name sql-next-photo :? :1
+-- :doc return next photo based on photo_pk, wrap around when asked for > max photo_pk.
+select * from
+(select * from (select * from photo where photo_pk > :photo_pk order by photo_pk limit 1)
+union 
+select * from photo where photo_pk = (select min(photo_pk) from photo))
+order by photo_pk desc limit 1;
 
 -- :name sql-select-all-person :? :*
 -- :doc select all fields from the person table
@@ -44,6 +47,14 @@ update person set name=:name where person_pk=:person_pk;
 
 -- :name sql-select-person :? :1
 select * from person where person_pk=:person_pk;
+
+-- :name sql-save-photo :! :n
+update photo set description=:description,
+    photo_date=:photo_date,
+    photo_min_date=:photo_min_date,
+    photo_max_date=:photo_max_date,
+    place_fk=:place_fk
+where photo_pk=:photo_pk;
 
 -- -----------------------------
 

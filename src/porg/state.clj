@@ -93,19 +93,22 @@
   (pp/pprint @params)
   (let [photo_pk (or (:photo_pk @params) (sql-firstnon db)) ;; sql-firstnon could return nil. Fix that.
         pic_root_path (:pic_root_path (config-data))
+        page_name "html/photo_page.html"
         photo-rec (sql-photo-select db {:photo_pk photo_pk})
         html-result (my-render
-                     (slurp "html/photo_page.html")
-                     (merge {:d_state "s_start_page" :pic_root_path pic_root_path }
+                     (slurp page_name)
+                     (merge {:d_state "s_photo_page" :page_name page_name :pic_root_path pic_root_path }
                             photo-rec))]
     (reset! html-out html-result)))
-
-;; Use and 'or' so that this will work if @params is uninitialized.
-;; (set-params {:d_state :s_photo_page, :photo_pk "31", :s_edit "Edit Photo"})
-(defn next-photo []
-  (set-params (merge @params
-                     (or (sql-next-photo-pk db {:photo_pk (:photo_pk @params)})
-                         (sql-firstnon db)))))
+(comment
+  ;; make sure a hashmap contains default value for some key
+  ;; For instance, @params contains place_fk, even if nil
+  (let [mm {:xx "foo"}] (cond-> mm  (nil? (:r mm)) (assoc :r "bar")))
+  (let [mm {:r "baz" :xx "foo"}] (cond-> mm  (nil? (:r mm)) (assoc :r "bar")))
+)
+(defn save-photo []
+  (sql-save-photo db @params)
+  )
 
 (defn test_config []
   ;; debug
@@ -135,16 +138,37 @@
 (defn clear_continue []
   (swap! params #(dissoc % :continue)))
 
+;; Normally? we have a photo_pk, but if not:
+;;  (let [mm {:xx "foo"}] (cond-> mm  (nil? (:r mm)) (assoc :r "bar")))
+;; Something like:
+;;   (cond-> @params  (nil? (:photo_pk @params)) (assoc (sql-firstnon db)))
+;; Why not just get the first photo record??
+;; get the first not-yet-edited photo record: (sql-firstnon db) 
+
 (defn draw-start-page []
   (println "draw-start-page")
   (pp/pprint @params)
   (let [pic_root_path (:pic_root_path (config-data))
+        web-params (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
+                          @params
+                          (or (sql-photo-select db @params) (sql-firstnon db))
+                          (sql-records-found db))
+        foo (pp/pprint web-params)
         html-result (my-render
                      (slurp "html/start_page.html")
-                     (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
-                            (or (sql-firstnon db) {:pathfile_name ""})
-                            (sql-records-found db)))]
+                     web-params)]
     (reset! html-out html-result)))
+
+;; Use and 'or' so that this will work if @params is uninitialized.
+;; (set-params {:d_state :s_photo_page, :photo_pk "31", :s_edit "Edit Photo"})
+(defn next-photo []
+  (println "next-photo")
+  (pp/pprint @params)
+  (set-params (merge @params
+                     (or (sql-next-photo db {:photo_pk (:photo_pk @params)})
+                         (sql-firstnon db)))))
+
+
 
 ;; This could take several minutes to run. We won't have any feedback on the progress.
 ;; Probably better to run it manually outside the app.
@@ -264,7 +288,7 @@
     [:s_edit nil :s_photo_page]
     [:s_new_person nil :s_new_person]
     [:s_select_person nil :s_person_page]
-    [:s_next nil :s_photo_page]
+    [:s_next next-photo nil]
     [:true draw-start-page nil]]
    :s_edit_person
    [[:s_save update-person nil]
@@ -283,6 +307,7 @@
    [[:s_cancel nil :s_start_page]
     [:s_select_person nil :s_person_page]
     [:s_next next-photo nil]
+    [:s_save save-photo nil]
     [:true draw-photo-page nil]]
    :test_config
    [[:true test_config nil]]

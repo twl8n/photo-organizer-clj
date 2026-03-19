@@ -26,7 +26,7 @@
                   <br>
                   <input name="s_populate_db" value="Populate DB" type="submit">
                   <br>
-                  <input name="s_next" value="Edit Next Photo" type="submit">
+                  <input name="s_next" value="Show Next Photo" type="submit">
                   <br>
                   <input name="s_new_person" value="Add Person" type="submit">
                   <br>
@@ -46,6 +46,16 @@
                   <input name="s_edit" value="Edit Photo" type="submit">
                 </div>
               </form>
+
+              <hr>
+              <form action="./porg" method="post">
+                <input name="d_state" value="s_photo_page" type="hidden">
+                <div style="text-align: left;">
+                  <input name="s_edit" value="Edit Photo" type="submit">
+                  <input name="photo_pk" value="{{photo_pk}}" type="text">
+                </div>
+              </form>
+
 
 
             </div>
