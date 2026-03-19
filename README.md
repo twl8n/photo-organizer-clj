@@ -133,6 +133,10 @@ cider-repl-set-ns C-c M-n n
 
 Split window and open the cider buffer, work as usual.
 
+After starting nrepl, always do these in the clojure source file:
+C-c M-n n       cider-repl-set-ns
+C-c C-k         cider-load-buffer
+
 cider keystrokes to remember
 C-c M-n         cider-ns-map
 C-c M-n n       cider-repl-set-ns
@@ -141,7 +145,12 @@ C-c C-e         cider-eval-last-sexp
 C-c M-i         cider-inspect
 C-c M-z         cider-load-buffer-and-switch-to-repl-buffer
 M-x -r-c-bu RET cider-repl-clear-buffer
+C-c C-z 	    switch between the REPL and a Clojure file
+M-.             jump to the source
+C-c C-d C-d     view the documentation 
 
+todo: Is my Emacs missing cider-nrepl plugin?
+WARNING: CIDER requires cider-nrepl to be fully functional. Some features will not be available without it! (More information)
 
 #### config
 

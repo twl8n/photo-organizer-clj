@@ -30,6 +30,20 @@ where photo_pk = :photo_pk;
 select photo_pk from photo
 where photo_pk > :photo_pk order by photo_pk limit 1;
 
+-- :name sql-select-all-person :? :*
+-- :doc select all fields from the person table
+select * from person order by name desc;
+
+-- :name sql-insert-person :! :n
+-- :doc insert a new person
+insert into person (name) values (:name);
+
+-- :name sql-update-person :! :n
+-- :doc update person
+update person set name=:name where person_pk=:person_pk;
+
+-- :name sql-select-person :? :1
+select * from person where person_pk=:person_pk;
 
 -- -----------------------------
 

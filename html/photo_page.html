@@ -1,0 +1,79 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Start Page</title>
+    <style>
+      td:nth-child(1) {  
+          text-align: right;
+          vertical-align: top;
+      }
+      .left-top {
+          vertical-align: top;
+          text-align: left !important;
+      }         
+    </style>
+  </head>
+  <body bgcolor="#ffffff">
+    <table border="0" cellpadding="3" cellspacing="0" width="800">
+      <tbody>
+        <tr>
+          <td bgcolor="#99cccc" class="left-top">
+            <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}">
+          </td>
+        </tr>
+        <tr>
+          <td bgcolor="#99cccc" valign="top">
+            <div align="left">
+              <form action="./porg" method="post">
+                <input name="d_state" value="s_photo_page" type="hidden">
+                <input name="photo_pk" value="{{photo_pk}}" type="hidden">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>photo_pk:</td><td>{{photo_pk}}</td>
+                    </tr><tr>
+                    <td>pathfile_name:</td><td>{{pathfile_name}}</td>
+                    </tr><tr>
+                      <td>Description</td><td><textarea name="description">{{description}}</textarea></td>
+                    </tr><tr>
+                      <td>Date</td><td><input name="photo_date" value="{{photo_date}}" type="text"></td>
+                    </tr><tr>
+                      <td>Earliest Date</td><td> <input name="photo_min_date" value="{{photo_min_date}}" type="text"></td>
+                    </tr><tr>
+                      <td>Latest Date</td><td> <input name="photo_max_date" value="{{photo_max_date}}" type="text"></td>
+                    </tr><tr>
+                      <td>Place:</td><td></td>
+                    </tr><tr>
+                      <td>People:</td><td></td>
+                    </tr><tr>
+                      <td>Albums or Vrolls:</td><td></td>
+                    </tr><tr>
+                      <td></td><td></td>
+                    </tr><tr>
+                      <td></td><td></td>
+                    </tr><tr>
+                      <td></td><td></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div style="text-align: left;">
+                  <input name="s_select_person" value="Show/Select Person" type="submit">
+                  <br>
+                  <input name="s_next" value="Edit Next Photo" type="submit">
+                  <br>
+                  <input name="s_cancel" value="Cancel/Back" type="submit">
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <br>
+    Template: start_page.html d_state: {{d_state}}
+    <script>
+      document.getElementById("scroll").scrollIntoView();
+    </script>
+  </body>
+</html>

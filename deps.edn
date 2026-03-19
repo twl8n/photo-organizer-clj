@@ -8,9 +8,9 @@
   de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
   org.clojure/java.jdbc {:mvn/version "0.7.5"}
   ring/ring {:mvn/version "1.8.2"}
-  ;; machine/machine {:local/root "../machine"}
-  github-twl8n/machine {:git/url "https://github.com/twl8n/machine"
-                        :sha "fabdf3f8329cc8e25217bcee4a460b1fe8fb04c0"}
+  machine/machine {:local/root "../machine"}
+  ;; github-twl8n/machine {:git/url "https://github.com/twl8n/machine"
+  ;;                       :sha "fabdf3f8329cc8e25217bcee4a460b1fe8fb04c0"}
   }
 
  :aliases 

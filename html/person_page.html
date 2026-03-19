@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Start Page</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <table border="0" cellpadding="3" cellspacing="0" width="800">
+      <tbody>
+        <tr>
+          <td bgcolor="#99cccc" valign="top">
+            <div align="center">
+              <form action="./porg" method="post">
+                <input name="d_state" value="{{d_state}}" type="hidden">
+                <input name="s_edit" value="Edit" type="submit">
+                <br>
+                <input name="s_cancel" value="Cancel" type="submit">
+                <br>
+                <input name="s_new" value="Add New" type="submit">
+                <br>
+                {{#person_list}}
+                <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}">
+                <label for="pid">{{name}} {{person_pk}}</label>
+                <br>
+                {{/person_list}}
+                <input name="s_edit" value="Edit" type="submit">
+                <br>
+                <input name="s_cancel" value="Cancel" type="submit">
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <br>
+    Template: {{page_name}} d_state: {{d_state}}
+    <script>
+      document.getElementById("scroll").scrollIntoView();
+    </script>
+  </body>
+</html>

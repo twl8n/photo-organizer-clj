@@ -25,6 +25,16 @@
   {:db-path (str (System/getenv "HOME") "/porg.db")})
 
 
+;; A CGI param from multiple checkboxes will be a vector of strings.
+;; A CGI param from single checkbox or inputs are string.
+;; This is a helper function to deal with it this aspect of CGI params.
+(defn trim-vec-or-string
+  "If vector, trim the string in the vector. If just a string, trim the string"
+  [orig]
+  (if (instance? clojure.lang.PersistentVector orig)
+    (map #(clojure.string/trim %) orig)
+    (clojure.string/trim orig)))
+
 ;; Be specific that we only do dynamic requests to the /porg endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
 ;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
@@ -37,9 +47,9 @@
       err-return)
     (let [temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
-                        (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
+                        (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
                         (assoc yy :d_state (or (keyword (:d_state yy)) (porg.state/default-state))))]
-      (pp/pprint temp-params)
+      (printf "temp-params:") (pp/pprint temp-params)
       (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)

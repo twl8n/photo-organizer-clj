@@ -158,6 +158,65 @@
 
 (defn noop [] true)
 
+(defn draw-person-page []
+  (println "draw-person-page")
+  (let [person-seq (sql-select-all-person db)
+        page_name "html/person_page.html"
+        html-result (my-render
+                     (slurp page_name)
+                     {:d_state "s_person_page" :page_name page_name :person_list person-seq})]
+    (reset! html-out html-result)))
+
+(comment
+  (let [page_name "html/new_person.html"
+        tpk (:person_pk @params)
+        single-pk (if (seq? tpk)
+                    (first tpk)
+                    tpk)] single-pk)
+  )
+
+;; CGI params might be single value, or might be vector. Deal with it.
+;; Some cases expect multiple values, but here we need a single primary key, so just take the first.
+;; CGI multivalue starts off as vector, but somewhere I accidentally changed it to list. Use `seq?` instead of
+;; `instance? clojure.lang.PersistentVector`
+
+(defn draw-edit-person
+  ;; Might be merged with new-person, not getting any record from the db.
+  []
+  (let [page_name "html/new_person.html"
+        tpk (:person_pk @params)
+        single-pk (if (seq? tpk)
+                    (first tpk)
+                    tpk)
+        html-result (my-render
+                     (slurp page_name)
+                     (merge {:d_state "s_edit_person" :page_name page_name}
+                            (sql-select-person db {:person_pk single-pk})))]
+    (reset! html-out html-result)))
+
+(defn new-person
+  ;; Might be merged with edit-person, sending nil person_pk
+  []
+  (let [page_name "html/new_person.html"
+        html-result (my-render
+                     (slurp page_name)
+                     {:d_state "s_new_person" :page_name page_name})]
+    (reset! html-out html-result)))
+
+;; save-person
+(defn save-person []
+  (sql-insert-person db @params))
+
+(defn update-person []
+  (sql-update-person db @params))
+
+  ;; (let [page_name "html/new_person.html"
+  ;;       html-result (my-render
+  ;;                    (slurp page_name)
+  ;;                    {:d_state "s_new_person" :page_name page_name})]
+  ;;   (reset! html-out html-result)))
+
+
 ;; Quick description of v5 state transition table format.
 ;; Hashmap of state names
 ;; Values in the hashmap are lists (of lists) of transitions for that state.
@@ -191,18 +250,38 @@
 (declare draw-start-page)
 
 ;; Change the return value to be your default starting state. Was :test_conf
-(defn default-state [] :start_page)
+(defn default-state [] :s_start_page)
+
+;; 2026-03-18 check boolean state function and do things depending on true/false, like don't change to new state?
+;; Combine that with explicit exit or error cases?
 
 ;; next state must be a keyword, probably also needs to exist in the table.
 ;; nil is ok as a fn-symbol
 ;; Don't confuse or conflate d_state with the current state.
 (def table
-  {:start_page
+  {:s_start_page
    [[:s_populate_db populate-db-wrapper nil]
     [:s_edit nil :s_photo_page]
+    [:s_new_person nil :s_new_person]
+    [:s_select_person nil :s_person_page]
+    [:s_next nil :s_photo_page]
     [:true draw-start-page nil]]
+   :s_edit_person
+   [[:s_save update-person nil]
+    [:s_cancel draw-person-page :exit]
+    [:true draw-edit-person nil]]
+   :s_person_page
+   [[:s_new nil :s_new_person]
+    [:s_cancel nil :s_start_page]
+    [:s_edit nil :s_edit_person]
+    [:true draw-person-page nil]]
+   :s_new_person
+   [[:s_save save-person :s_person_page]
+    [:s_cancel nil :s_person_page]
+    [:true new-person nil]]
    :s_photo_page
-   [[:s_cancel nil :start_page]
+   [[:s_cancel nil :s_start_page]
+    [:s_select_person nil :s_person_page]
     [:s_next next-photo nil]
     [:true draw-photo-page nil]]
    :test_config
