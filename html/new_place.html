@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Start Page</title>
+    <title>New Place</title>
   </head>
   <body bgcolor="#ffffff">
     <table border="0" cellpadding="3" cellspacing="0" width="800">
@@ -13,10 +13,18 @@
                 <input name="d_state" value="{{d_state}}" type="hidden">
                 <input name="prev_state" value="{{prev_state}}" type="hidden">
                 <input name="photo_pk" value="{{photo_pk}}" type="hidden">
-                <input name="person_pk" value="{{person_pk}}" type="hidden">
-                person_pk {{person_pk}}
+                <input name="place_pk" value="{{place_pk}}" type="hidden">
+                place_pk {{place_pk}}
                 <br>
-                Name: <input name="name" value="{{name}}" type="text">
+                Place name: <input name="name" value="{{place_name}}" type="text"><br>
+                street1: <input name="street1" value="{{street1}}" type="text"><br>
+                street2: <input name="street2" value="{{street2}}" type="text"><br>
+                city: <input name="city" value="{{city}}" type="text"><br>
+                state: <input name="state" value="{{state}}" type="text"><br>
+                zip_code: <input name="zip_code" value="{{zip_code}}" type="text"><br>
+                longitude: <input name="longitude" value="{{longitude}}" type="text"><br>
+                latitude: <input name="latitude" value="{{latitude}}" type="text"><br>
+                <br>
                 <input name="s_cancel" value="Cancel" type="submit">
                 <br>
                 <input name="s_save" value="Save" type="submit">

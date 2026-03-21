@@ -29,11 +29,6 @@ create table "photo"
         FOREIGN KEY(place_fk) REFERENCES place(place_pk)
         );
 
--- select person.name
--- from person, photo_person
--- where photo_fk={photo_pk}
--- and person_fk=person_pk;
-
 -- Do we need ordering, left to right, front to back, in the photo? (yes)
 -- Or x,y coords in the photo? (Maybe)
 
@@ -59,7 +54,7 @@ create table "person"
 create table "place"
     (
 	place_pk integer primary key autoincrement,
-        name text,
+        place_name text,
         street1 text,
         street2 text,
         city text,

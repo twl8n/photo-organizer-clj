@@ -14,65 +14,95 @@
     </style>
   </head>
   <body bgcolor="#ffffff">
-    <table border="0" cellpadding="3" cellspacing="0" width="800">
-      <tbody>
+    <form action="./porg" method="post">
+      <input name="d_state" value="s_photo_page" type="hidden">
+      <input name="prev_state" value="s_photo_page" type="hidden">
+      <input name="photo_pk" value="{{photo_pk}}" type="hidden">
+      <input name="s_select_person" value="Show/Select Person" type="submit">
+    </form>
+    <hr>
+    <form action="./porg" method="post">
+      <input name="d_state" value="s_photo_page" type="hidden">
+      <input name="photo_pk" value="{{photo_pk}}" type="hidden">
+      <table>
         <tr>
-          <td bgcolor="#99cccc" class="left-top">
-            <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}">
+          <td>
+            <table bgcolor="#99cccc" border="3" cellpadding="3" cellspacing="0" style="min-width: 200">
+              <tbody>
+                <tr>
+                  <td class="left-top">
+                    <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}">
+                  </td>
+                  <td class="left-top" rowspan="2">
+                    {{#person_list}}
+                    <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}" {{checked}}>
+                    <label for="pid">{{name}} {{person_pk}}</label>
+                    <br>
+                    {{/person_list}}
+                  </td>
+                </tr>
+                <tr>
+                  <td bgcolor="#99cccc" valign="top">
+                    <div align="left">
+                      <table>
+                        <tbody>
+                          <tr>
+                            <td>photo_pk:</td><td>{{photo_pk}}</td>
+                          </tr><tr>
+                            <td>pathfile_name:</td><td>{{pathfile_name}}</td>
+                          </tr><tr>
+                            <td>Description</td><td><textarea name="description">{{description}}</textarea></td>
+                          </tr><tr>
+                            <td>Date</td><td><input name="photo_date" value="{{photo_date}}" type="text"></td>
+                          </tr><tr>
+                            <td>Earliest Date</td><td> <input name="photo_min_date" value="{{photo_min_date}}" type="text"></td>
+                          </tr><tr>
+                            <td>Latest Date</td><td> <input name="photo_max_date" value="{{photo_max_date}}" type="text"></td>
+                          </tr><tr>
+                            <td>Place:</td>
+                            <td>
+                              {{place_name}}
+                              <input name="place_fk" value="{{place_fk}}" type="hidden">
+                              <br>
+                              <input name="s_choose_place" value="Save and choose place" type="submit">
+                            </td>
+                          </tr><tr>
+                            <td>People:</td>
+                            <td>
+                              {{#person_display}}
+                              {{name}} <br>
+                              {{/person_display}}
+                            </td>
+                          </tr><tr>
+                            <td>Albums or Vrolls:</td><td></td>
+                          </tr><tr>
+                            <td></td><td></td>
+                          </tr><tr>
+                            <td></td><td></td>
+                          </tr><tr>
+                            <td></td><td></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div style="text-align: left;">
+                        <br>
+                        <input name="s_next" value="Save + Edit Next Photo" type="submit">
+                        <br>
+                        <input name="s_save" value="Save" type="submit">
+                        <br>
+                        <input name="s_cancel" value="Cancel/Back" type="submit">
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+          <td>
           </td>
         </tr>
-        <tr>
-          <td bgcolor="#99cccc" valign="top">
-            <div align="left">
-              <form action="./porg" method="post">
-                <input name="d_state" value="s_photo_page" type="hidden">
-                <input name="photo_pk" value="{{photo_pk}}" type="hidden">
-                <table>
-                  <tbody>
-                    <tr>
-                      <td>photo_pk:</td><td>{{photo_pk}}</td>
-                    </tr><tr>
-                    <td>pathfile_name:</td><td>{{pathfile_name}}</td>
-                    </tr><tr>
-                      <td>Description</td><td><textarea name="description">{{description}}</textarea></td>
-                    </tr><tr>
-                      <td>Date</td><td><input name="photo_date" value="{{photo_date}}" type="text"></td>
-                    </tr><tr>
-                      <td>Earliest Date</td><td> <input name="photo_min_date" value="{{photo_min_date}}" type="text"></td>
-                    </tr><tr>
-                      <td>Latest Date</td><td> <input name="photo_max_date" value="{{photo_max_date}}" type="text"></td>
-                    </tr><tr>
-                      <td>Place:</td><td><input name="place_fk" value="{{place_fk}}" type="text"></td>
-                    </tr><tr>
-                      <td>People:</td><td></td>
-                    </tr><tr>
-                      <td>Albums or Vrolls:</td><td></td>
-                    </tr><tr>
-                      <td></td><td></td>
-                    </tr><tr>
-                      <td></td><td></td>
-                    </tr><tr>
-                      <td></td><td></td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div style="text-align: left;">
-                  <input name="s_select_person" value="Show/Select Person" type="submit">
-                  <br>
-                  <input name="s_next" value="Edit Next Photo" type="submit">
-                  <br>
-                  <input name="s_save" value="Save" type="submit">
-                  <br>
-                  <input name="s_cancel" value="Cancel/Back" type="submit">
-                </div>
-              </form>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <br>
-    <br>
+      </table>
+    </form>
     Template: {{page_name}} d_state: {{d_state}}
     <script>
       document.getElementById("scroll").scrollIntoView();

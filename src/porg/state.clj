@@ -88,31 +88,52 @@
 (defn populate-db-wrapper []
   (populate-db (take 5 (parse-file-list (:pfl-file (config-data))))))
 
+(defn person-checkbox-helper
+  "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
+  [photo_pk]
+  (let [pp (map #(assoc % :checked true) (sql-select-photo-person db {:photo_fk photo_pk}))
+        pxp (apply merge (flatten (map (fn [xx] {(:person_fk xx) true}) pp)))
+        ap (sql-select-all-person db)]
+    (map (fn [xx] (if (contains? pxp (:person_pk xx)) (assoc xx :checked "checked") xx)) ap)))
+
+(defn pk-helper
+  "Return an integer or nil. Don't throw error."
+  [pk]
+  (try (Integer. pk) (catch Exception e nil)))
+
 (defn draw-photo-page []
-  (println "draw-photo-page")
-  (pp/pprint @params)
-  (let [photo_pk (or (:photo_pk @params) (sql-firstnon db)) ;; sql-firstnon could return nil. Fix that.
+  (let [photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
+        person-seq (person-checkbox-helper photo_pk)
         pic_root_path (:pic_root_path (config-data))
         page_name "html/photo_page.html"
-        photo-rec (sql-photo-select db {:photo_pk photo_pk})
+        photo-rec (sql-select-photo db {:photo_pk photo_pk})
         html-result (my-render
                      (slurp page_name)
-                     (merge {:d_state "s_photo_page" :page_name page_name :pic_root_path pic_root_path }
+                     (merge {:d_state "s_photo_page"
+                             :photo_pk photo_pk
+                             :page_name page_name
+                             :pic_root_path pic_root_path
+                             :person_display (sql-select-photo-person db {:photo_fk photo_pk})
+                             :person_list person-seq}
                             photo-rec))]
     (reset! html-out html-result)))
-(comment
-  ;; make sure a hashmap contains default value for some key
-  ;; For instance, @params contains place_fk, even if nil
-  (let [mm {:xx "foo"}] (cond-> mm  (nil? (:r mm)) (assoc :r "bar")))
-  (let [mm {:r "baz" :xx "foo"}] (cond-> mm  (nil? (:r mm)) (assoc :r "bar")))
-)
+
+;; 2026-03-20 Maybe include a hidden checkbox element that is always true, but nil value? Ugh.
+;; Php relies on a trailing sigil-like convention foo[] indicated array-ish.
+;; We could have a naming convention for checkbox params.
+;; 2026-03-19 Can html say that an input is always a list/vector, even when single value? (No)
+;; Or could our middleware do that? Or an HTML trick like always having a empty value?
+;; Might make more sense if single/multi params were always list/vector, even when single.
 (defn save-photo []
   (sql-save-photo db @params)
-  )
+  (sql-delete-photo-person db {:photo_fk (:photo_pk @params)}) ;; be explicit about using a foreign key
+  (let [photo_fk (:photo_pk @params) ;; photo_pk become photo_fk foreign key in table photo_person
+        praw (:person_pk @params) ;; raw params might be a single value or list
+        pvec (if (seq? praw) (into [] praw) (into [] (list praw)))] ;; make a vector
+    (doseq [person_fk pvec]
+      (sql-insert-photo-person db {:photo_fk photo_fk :person_fk person_fk}))))
 
 (defn test_config []
-  ;; debug
-  (pp/pprint @params)
   (let [ready-data {:vals (test-config-data) 
                     :d_state (:d_state @params) 
                     :s_one (:s_one @params) 
@@ -122,8 +143,6 @@
     (reset! html-out html-result)))
 
 (defn alt []
-  ;; debug
-  (pp/pprint @params)
   (let [ready-data {:vals (test-config-data) 
                     :d_state (:d_state @params) 
                     :s_one (:s_one @params)
@@ -138,22 +157,14 @@
 (defn clear_continue []
   (swap! params #(dissoc % :continue)))
 
-;; Normally? we have a photo_pk, but if not:
-;;  (let [mm {:xx "foo"}] (cond-> mm  (nil? (:r mm)) (assoc :r "bar")))
-;; Something like:
-;;   (cond-> @params  (nil? (:photo_pk @params)) (assoc (sql-firstnon db)))
-;; Why not just get the first photo record??
-;; get the first not-yet-edited photo record: (sql-firstnon db) 
-
+;; Make sure we have a full photo record. Use the first non-updated record as a default
 (defn draw-start-page []
-  (println "draw-start-page")
-  (pp/pprint @params)
-  (let [pic_root_path (:pic_root_path (config-data))
+  (let [photo-map (if (number? (:photo_pk @params)) (sql-select-photo db @params) (sql-firstnon db))
+        pic_root_path (:pic_root_path (config-data))
         web-params (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
                           @params
-                          (or (sql-photo-select db @params) (sql-firstnon db))
+                          photo-map
                           (sql-records-found db))
-        foo (pp/pprint web-params)
         html-result (my-render
                      (slurp "html/start_page.html")
                      web-params)]
@@ -162,8 +173,6 @@
 ;; Use and 'or' so that this will work if @params is uninitialized.
 ;; (set-params {:d_state :s_photo_page, :photo_pk "31", :s_edit "Edit Photo"})
 (defn next-photo []
-  (println "next-photo")
-  (pp/pprint @params)
   (set-params (merge @params
                      (or (sql-next-photo db {:photo_pk (:photo_pk @params)})
                          (sql-firstnon db)))))
@@ -190,6 +199,51 @@
                      (slurp page_name)
                      {:d_state "s_person_page" :page_name page_name :person_list person-seq})]
     (reset! html-out html-result)))
+
+(defn draw-place-page []
+  (let [chose_place (if (:s_choose_place @params) {:choose_place true} nil)
+        d_state "s_place_page"
+        place-seq (sql-select-all-place db)
+        page_name "html/place_page.html"
+        web-params (merge
+                    chose_place
+                    {:d_state d_state :photo_pk (:photo_pk @params) :page_name page_name :place_list place-seq})
+        html-result (my-render (slurp page_name) web-params)]
+    (reset! html-out html-result)))
+
+;; @@
+(defn draw-edit-place []
+  (let [d_state "s_edit_place"
+        page_name "html/new_place.html"
+        place-seq (sql-select-place db @params)
+        html-result (my-render
+                     (slurp page_name)
+                     (merge
+                      {:d_state d_state :page_name page_name}
+                      place-seq))]
+    (reset! html-out html-result)))
+
+(defn draw-new-place []
+  (let [d_state "s_new_place"
+        page_name "html/new_place.html"
+        html-result (my-render
+                     (slurp page_name)
+                     (merge
+                      {:d_state d_state :page_name page_name}))]
+    (reset! html-out html-result)))
+
+(defn save-place []
+  (sql-insert-place db @params))
+
+(defn update-place []
+  (sql-update-place db @params))
+
+;; assumes we have (:photo_pk @params)
+(defn save-choice []
+  (let [working-params {:photo_pk (:photo_pk @params) :place_fk (:place_pk @params)}]
+    (printf "save-choice working-params\n")
+    (pp/pprint working-params)
+    (sql-update-pplace db working-params)))
 
 (comment
   (let [page_name "html/new_person.html"
@@ -233,6 +287,10 @@
 
 (defn update-person []
   (sql-update-person db @params))
+
+;; There should be a formal way to use a param to change the state.
+(defn back-state []
+  (set-params (assoc @params :d_state (:prev_state @params))))
 
   ;; (let [page_name "html/new_person.html"
   ;;       html-result (my-render
@@ -287,6 +345,8 @@
    [[:s_populate_db populate-db-wrapper nil]
     [:s_edit nil :s_photo_page]
     [:s_new_person nil :s_new_person]
+    [:s_new_place nil :s_new_place]
+    [:s_places nil :s_place_page]
     [:s_select_person nil :s_person_page]
     [:s_next next-photo nil]
     [:true draw-start-page nil]]
@@ -298,6 +358,7 @@
    [[:s_new nil :s_new_person]
     [:s_cancel nil :s_start_page]
     [:s_edit nil :s_edit_person]
+    [:s_back back-state :exit]
     [:true draw-person-page nil]]
    :s_new_person
    [[:s_save save-person :s_person_page]
@@ -306,9 +367,32 @@
    :s_photo_page
    [[:s_cancel nil :s_start_page]
     [:s_select_person nil :s_person_page]
+    [:s_next save-photo nil]
     [:s_next next-photo nil]
     [:s_save save-photo nil]
+    [:s_choose_place save-photo :s_choose_place]
     [:true draw-photo-page nil]]
+
+   :s_choose_place
+   [[:s_cancel nil nil]
+    [:true draw-place-page nil]]
+
+   :s_edit_place
+   [[:s_save update-place nil]
+    [:s_save draw-place-page :exit]
+    [:s_cancel draw-place-page :exit]
+    [:true draw-edit-place nil]]
+   :s_place_page
+   [[:s_save_choice save-choice :s_photo_page]
+    [:s_new nil :s_new_place]
+    [:s_cancel nil :s_start_page]
+    [:s_edit nil :s_edit_place]
+    [:true draw-place-page nil]]
+   :s_new_place
+   [[:s_save save-place :s_place_page]
+    [:s_cancel nil :s_place_page]
+    [:true draw-new-place nil]]
+
    :test_config
    [[:true test_config nil]]
    :alt

@@ -25,7 +25,9 @@ Can Clojure read command line args? Use command line arg to switch to dev config
 `clj -X cmgr.core/-main`
 
 todo:
-
+- 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
+table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
+- 2026-03-20 Change places where {{name}} needs to be {{place_name}}
 - 2026-03-16 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
 - 2026-03-16  The symlink is hard coded, created manually. Should be in config, created by this app.
 ;; The directory path is hard coded here, and should be in config.
@@ -124,8 +126,14 @@ jpegtopnm IMG_3065.JPG | pnmrotate -90 - | pamscale -xyfit 2592 1936 - | pnmpast
 
 #### Development in Emacs
 
-In emacs:
-cider-connect accepting defaults
+In the shell:
+`clj -M:nREPL -m nrepl.cmdline`
+
+Then in emacs:
+`cider-connect` accepting defaults
+
+Or
+`cider-jack-in` which seems to launch the nrepl from inside emacs and connecto it.
 
 Open a code buffer and:
 cider-load-buffer C-c C-k

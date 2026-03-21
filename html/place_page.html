@@ -19,13 +19,16 @@
                 <br>
                 <input name="s_new" value="Add New" type="submit">
                 <br>
-                <input name="s_back" value="Back/Previous" type="submit">
+                {{#choose_place}}
+                <input name="s_save_choice" value="Chose this place" type="submit">
+                {{/choose_place}}
+                photo_pk {{photo_pk}}
                 <br>
-                {{#person_list}}
-                <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}">
-                <label for="pid">{{name}} {{person_pk}}</label>
+                {{#place_list}}
+                <input type="checkbox" id="pid" name="place_pk" value="{{place_pk}}">
+                <label for="pid">{{place_name}} {{street1}} {{city}} {{state}} {{zip_code}} pk: {{place_pk}}</label>
                 <br>
-                {{/person_list}}
+                {{/place_list}}
               </form>
             </div>
           </td>

@@ -16,14 +16,23 @@ VALUES (:pathfile_name);
 select count(*) as recordsfound from photo;
 
 -- :name sql-firstnon :? :1
--- :doc return full photo path file name of a record with no annotations
-select photo_pk, pathfile_name from photo
-where description is null order by photo_pk limit 1;
-
--- :name sql-photo-select :? :1
--- :doc return full photo path file name of a record with no annotations
+-- :doc return full photo record with the shortest description, which might be null.
 select * from photo
+order by length(description) asc limit 1;
+
+-- :name sql-select-photo :? :1
+-- :doc return full photo path file name of a record with no annotations
+SELECT *
+FROM photo 
+left JOIN place ON photo.place_fk = place.place_pk
 where photo_pk = :photo_pk;
+
+-- :name sql-select-photo-person :? :*
+-- :doc Only return person_fk since there is a single photo_fk. I think.
+select person_fk,person.name from photo_person,person
+where photo_fk = :photo_fk
+    and person_pk=person_fk
+order by person.name asc;
 
 -- :name sql-next-photo :? :1
 -- :doc return next photo based on photo_pk, wrap around when asked for > max photo_pk.
@@ -56,31 +65,33 @@ update photo set description=:description,
     place_fk=:place_fk
 where photo_pk=:photo_pk;
 
--- -----------------------------
+-- :name sql-delete-photo-person :! :n
+delete from photo_person where photo_fk = :photo_fk;
 
--- https://sqlite.org/lang_conflict.html
--- create table uses "on conflict" but insert, update, upsert use "... or ignore"
--- ON CONFLICT(pathfile_name) DO NOTHING;
+-- :name sql-insert-photo-person :! :n
+insert into photo_person (photo_fk, person_fk) values (:photo_fk,:person_fk);
 
--- Not used, but alternative method to prevent inserting existing records.
--- INSERT INTO memos(id,text) 
--- SELECT 5, 'text to insert' 
--- WHERE NOT EXISTS(SELECT 1 FROM memos WHERE id = 5 AND text = 'text to insert');
+-- :name sql-select-all-place :? :*
+select * from place order by place_pk;
 
--- Not used, also insert but not duplicate.
--- INSERT OR IGNORE INTO table1 (email) VALUES ('test@domain.com');
+-- :name sql-update-pplace :! :n
+update photo set place_fk = :place_fk where photo_pk = :photo_pk;
 
--- (ex (characters/insert-characters db {:characters [["Vizzini" "intelligence"]
---                                                      ["Fezzik" "strength"]
---                                                      ["Inigo Montoya" "swordmanship"]]}))
--- -- :name insert-characters :! :n
--- -- :doc Insert multiple characters with :tuple* parameter type
--- insert into characters (name, specialty)
--- values :tuple*:characters
+-- :name sql-select-place :? :1
+select * from place where place_pk = :place_pk;
 
--- (ex (characters/insert-character db {:name "Buttercup" :specialty "beauty"}))
--- -- A :result value of :n below will return affected row count:
--- -- :name insert-character :! :n
--- -- :doc Insert a single character
--- insert into characters (name, specialty)
--- values (:name, :specialty)
+-- :name sql-insert-place :! :n
+insert into place (name, street1, street2, city, state, zip_code, longitude, latitude)
+values (:name, :street1, :street2, :city, :state, :zip_code, :longitude, :latitude);
+
+-- :name sql-update-place :! :n
+update place
+set name = :name,
+    street1 = :street1,
+    street2 = :street2,
+    city = :city,
+    state = :state,
+    zip_code = :zip_code,
+    longitude = :longitude,
+    latitude = :latitude
+where place_pk = :place_pk;
