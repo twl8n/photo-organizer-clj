@@ -10,8 +10,10 @@
           <td bgcolor="#99cccc" valign="top">
             Photo directory is {{pic_root_path}}<br>
             You have {{recordsfound}} images.
+            <br>
+            {{pathfile_name}}
           </td>
-          <td rowspan="5">
+          <td rowspan="5" style="height: 400px;">
             <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}">
           </td>
         </tr>
@@ -22,11 +24,11 @@
                 <input name="d_state" value="s_start_page" type="hidden">
                 <input name="photo_pk" value="{{photo_pk}}" type="hidden">
                 <div style="text-align: left;">
-                  <input name="s_scan" value="Scan or rescan directory tree" type="submit">
+                  <input name="s_populate_db" value="Populate DB" type="submit" disabled>
                   <br>
-                  <input name="s_populate_db" value="Populate DB" type="submit">
+                  <input name="s_previous" value="Previous Photo" type="submit">&nbsp;&nbsp;<input name="s_next" value="Next Photo" type="submit">
                   <br>
-                  <input name="s_next" value="Show Next Photo" type="submit">
+                  <input name="s_jump" value="Jump to:" type="submit">&nbsp;&nbsp;<input name="jump_pk" value="" type="text">
                   <br>
                   <input name="s_new_person" value="Add Person" type="submit">
                   <br>

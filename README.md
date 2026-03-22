@@ -25,6 +25,31 @@ Can Clojure read command line args? Use command line arg to switch to dev config
 `clj -X cmgr.core/-main`
 
 todo:
+
+- ? Is there any way that "back" works? Currently use s_save_choice
+<input name="s_back" value="Back/Previous" type="submit">
+<br>
+[:s_back back-state :exit]
+
+x Add "jump to" on start page.
+- Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
++ Add ability to edit photo > person > new person > choose person > back to photo.
+- Add user table (even without authentication) to keep user settings, history.
+- Add ability to mark image as duplicate, and link to other copies of same image.
+x Add previous photo button
+x Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
+
+- 2026-03-21 Did I try to compile the code before the nrepl was fully running? 
+java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
+
+- 2026-03-21 Fixed (work around) by cider-load-buffer on core.clj. How to get cider to load all the .clj buffers? Or at least core.clj and state.clj?
+
+(porg.core/-main)
+Execution error (ClassNotFoundException) at java.net.URLClassLoader/findClass (URLClassLoader.java:445).
+porg.core
+java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
+
+
 - 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
 table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
 - 2026-03-20 Change places where {{name}} needs to be {{place_name}}

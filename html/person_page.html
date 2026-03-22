@@ -19,10 +19,15 @@
                 <br>
                 <input name="s_new" value="Add New" type="submit">
                 <br>
-                <input name="s_back" value="Back/Previous" type="submit">
+
+                {{#choose_person}}
+                <input name="s_save_choice" value="Chose this person(s)" type="submit">
+                {{/choose_person}}
+                <br>
+                photo_pk {{photo_pk}}
                 <br>
                 {{#person_list}}
-                <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}">
+                <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}" {{checked}}>
                 <label for="pid">{{name}} {{person_pk}}</label>
                 <br>
                 {{/person_list}}

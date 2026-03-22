@@ -49,7 +49,7 @@
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
                         (assoc yy :d_state (or (keyword (:d_state yy)) (porg.state/default-state))))]
-      (printf "temp-params:") (pp/pprint temp-params)
+      ;; (printf "temp-params:") (pp/pprint temp-params)
       (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)

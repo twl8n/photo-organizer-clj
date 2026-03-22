@@ -16,14 +16,8 @@
   <body bgcolor="#ffffff">
     <form action="./porg" method="post">
       <input name="d_state" value="s_photo_page" type="hidden">
+      <input name="photo_pk" value="{{photo_pk}}" type="hidden">
       <input name="prev_state" value="s_photo_page" type="hidden">
-      <input name="photo_pk" value="{{photo_pk}}" type="hidden">
-      <input name="s_select_person" value="Show/Select Person" type="submit">
-    </form>
-    <hr>
-    <form action="./porg" method="post">
-      <input name="d_state" value="s_photo_page" type="hidden">
-      <input name="photo_pk" value="{{photo_pk}}" type="hidden">
       <table>
         <tr>
           <td>
@@ -65,6 +59,8 @@
                               <input name="place_fk" value="{{place_fk}}" type="hidden">
                               <br>
                               <input name="s_choose_place" value="Save and choose place" type="submit">
+                              <br>
+                              <input name="s_choose_person" value="Save and choose person(s)" type="submit">
                             </td>
                           </tr><tr>
                             <td>People:</td>

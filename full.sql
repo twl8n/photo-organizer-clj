@@ -37,14 +37,24 @@ order by person.name asc;
 -- :name sql-next-photo :? :1
 -- :doc return next photo based on photo_pk, wrap around when asked for > max photo_pk.
 select * from
-(select * from (select * from photo where photo_pk > :photo_pk order by photo_pk limit 1)
-union 
-select * from photo where photo_pk = (select min(photo_pk) from photo))
+    (select * from
+        (select * from photo where photo_pk > :photo_pk order by photo_pk limit 1)
+    union 
+    select * from photo where photo_pk = (select min(photo_pk) from photo))
 order by photo_pk desc limit 1;
+
+-- :name sql-previous-photo :? :1
+-- :doc return previous photo based on photo_pk, wrap around when asked for < min photo_pk.
+select * from (
+    select * from
+        (select * from photo where photo_pk < :photo_pk order by photo_pk desc limit 1)
+    union 
+    select * from photo where photo_pk = (select max(photo_pk) from photo)
+        ) order by photo_pk asc limit 1;
 
 -- :name sql-select-all-person :? :*
 -- :doc select all fields from the person table
-select * from person order by name desc;
+select * from person order by name asc;
 
 -- :name sql-insert-person :! :n
 -- :doc insert a new person
@@ -81,12 +91,12 @@ update photo set place_fk = :place_fk where photo_pk = :photo_pk;
 select * from place where place_pk = :place_pk;
 
 -- :name sql-insert-place :! :n
-insert into place (name, street1, street2, city, state, zip_code, longitude, latitude)
-values (:name, :street1, :street2, :city, :state, :zip_code, :longitude, :latitude);
+insert into place (place_name, street1, street2, city, state, zip_code, longitude, latitude)
+values (:place_name, :street1, :street2, :city, :state, :zip_code, :longitude, :latitude);
 
 -- :name sql-update-place :! :n
 update place
-set name = :name,
+set place_name = :place_name,
     street1 = :street1,
     street2 = :street2,
     city = :city,

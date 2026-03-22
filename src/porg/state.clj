@@ -67,10 +67,15 @@
 
 ;; 2026-03-16 user code below this line.
 
+(defn get_wh [full_name]
+  (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
+                                      (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
+    [(Integer. width) (Integer. height)]))
 
 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
 ;; The symlink is hard coded, created manually. Should be in config, created by this app.
 ;; image-path-base The directory path is hard coded here, and should be in config.
+
 (defn parse-file-list
   "Read a list of files, run a regex to keep image file names, remove the rest. Assumes some other code has created the file of names."
   [filename]
@@ -86,7 +91,7 @@
 
 ;; sqlite> insert into config values ("pfl-file", "/Users/zeus/files.txt");
 (defn populate-db-wrapper []
-  (populate-db (take 5 (parse-file-list (:pfl-file (config-data))))))
+  (populate-db (parse-file-list (:pfl-file (config-data)))))
 
 (defn person-checkbox-helper
   "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
@@ -118,20 +123,25 @@
                             photo-rec))]
     (reset! html-out html-result)))
 
-;; 2026-03-20 Maybe include a hidden checkbox element that is always true, but nil value? Ugh.
-;; Php relies on a trailing sigil-like convention foo[] indicated array-ish.
-;; We could have a naming convention for checkbox params.
-;; 2026-03-19 Can html say that an input is always a list/vector, even when single value? (No)
-;; Or could our middleware do that? Or an HTML trick like always having a empty value?
-;; Might make more sense if single/multi params were always list/vector, even when single.
-(defn save-photo []
-  (sql-save-photo db @params)
+;; 2026-03-20 Single/multi params problem: better if always list/vector, even when single? Maybe include a
+;; hidden checkbox element that is always true, but nil value? Ugh. Php relies on a trailing sigil-like
+;; convention foo[] indicated array-ish. We could have a naming convention for checkbox params. Can html say
+;; that an input is always a list/vector, even when single value? (No) Or could our middleware do that? Or an
+;; HTML trick like always having a empty value?
+
+(defn save-photo-person
+  "Save persons linked to a photo. This set is assumed to be complete, so delete the old values and insert new."
+  []
   (sql-delete-photo-person db {:photo_fk (:photo_pk @params)}) ;; be explicit about using a foreign key
   (let [photo_fk (:photo_pk @params) ;; photo_pk become photo_fk foreign key in table photo_person
         praw (:person_pk @params) ;; raw params might be a single value or list
         pvec (if (seq? praw) (into [] praw) (into [] (list praw)))] ;; make a vector
     (doseq [person_fk pvec]
       (sql-insert-photo-person db {:photo_fk photo_fk :person_fk person_fk}))))
+
+(defn save-photo []
+  (sql-save-photo db @params)
+  (save-photo-person))
 
 (defn test_config []
   (let [ready-data {:vals (test-config-data) 
@@ -159,7 +169,7 @@
 
 ;; Make sure we have a full photo record. Use the first non-updated record as a default
 (defn draw-start-page []
-  (let [photo-map (if (number? (:photo_pk @params)) (sql-select-photo db @params) (sql-firstnon db))
+  (let [photo-map (if (number? (pk-helper (:photo_pk @params))) (sql-select-photo db @params) (sql-firstnon db))
         pic_root_path (:pic_root_path (config-data))
         web-params (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
                           @params
@@ -171,47 +181,71 @@
     (reset! html-out html-result)))
 
 ;; Use and 'or' so that this will work if @params is uninitialized.
-;; (set-params {:d_state :s_photo_page, :photo_pk "31", :s_edit "Edit Photo"})
 (defn next-photo []
   (set-params (merge @params
                      (or (sql-next-photo db {:photo_pk (:photo_pk @params)})
                          (sql-firstnon db)))))
 
+(defn previous-photo
+  "select the previous photo and wrap when at min fk. Return the first photo when something goes wrong."
+  []
+  (set-params (merge @params
+                     (or (sql-previous-photo db {:photo_pk (:photo_pk @params)})
+                         (sql-firstnon db)))))
 
+(defn jump-to []
+  (let [jump_pk (:jump_pk @params)]
+    (if (number? (pk-helper jump_pk))
+      (set-params (merge @params {:photo_pk jump_pk}))
+      nil)))
 
 ;; This could take several minutes to run. We won't have any feedback on the progress.
 ;; Probably better to run it manually outside the app.
 (defn all-pic-files []
   (shell/sh "./pic-list.sh"))
 
-(defn get_wh [full_name]
-  (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
-                                      (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
-    [(Integer. width) (Integer. height)]))
-
 (defn noop [] true)
 
 (defn draw-person-page []
   (println "draw-person-page")
-  (let [person-seq (sql-select-all-person db)
+  (let [choose-person-bool (if (:s_choose_person @params) true false)
+        person-seq (person-checkbox-helper (:photo_pk @params))
+        old-person-seq (sql-select-all-person db)
         page_name "html/person_page.html"
         html-result (my-render
                      (slurp page_name)
-                     {:d_state "s_person_page" :page_name page_name :person_list person-seq})]
+                     {:d_state "s_person_page"
+                      :choose_person choose-person-bool
+                      :photo_pk (:photo_pk @params)
+                      :page_name page_name
+                      :person_list person-seq})]
     (reset! html-out html-result)))
 
+;; :place_pk from the database is a number.
+;; :place_fk from the html is a string.
+;; Convert the db value wih (str) before comparing. 
+(defn place-checkbox-helper
+  "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
+  [photo_pk]
+  (let [ap (sql-select-all-place db)]
+    (map (fn [xx] (if (= (str (:place_pk xx)) (:place_fk @params)) (assoc xx :checked "checked") xx)) ap)))
+
+;; We can come here from start page or photo page, so we might have place_pk or place_fk.
 (defn draw-place-page []
   (let [chose_place (if (:s_choose_place @params) {:choose_place true} nil)
         d_state "s_place_page"
-        place-seq (sql-select-all-place db)
+        place-seq (place-checkbox-helper (:photo_pk @params));; (sql-select-all-place db)
         page_name "html/place_page.html"
         web-params (merge
                     chose_place
-                    {:d_state d_state :photo_pk (:photo_pk @params) :page_name page_name :place_list place-seq})
+                    {:d_state d_state
+                     :photo_pk (:photo_pk @params)
+                     :place_pk (or (:place_fk @params) (:place_pk @params))
+                     :page_name page_name
+                     :place_list place-seq})
         html-result (my-render (slurp page_name) web-params)]
     (reset! html-out html-result)))
 
-;; @@
 (defn draw-edit-place []
   (let [d_state "s_edit_place"
         page_name "html/new_place.html"
@@ -238,20 +272,9 @@
 (defn update-place []
   (sql-update-place db @params))
 
-;; assumes we have (:photo_pk @params)
-(defn save-choice []
+(defn save-place-choice []
   (let [working-params {:photo_pk (:photo_pk @params) :place_fk (:place_pk @params)}]
-    (printf "save-choice working-params\n")
-    (pp/pprint working-params)
     (sql-update-pplace db working-params)))
-
-(comment
-  (let [page_name "html/new_person.html"
-        tpk (:person_pk @params)
-        single-pk (if (seq? tpk)
-                    (first tpk)
-                    tpk)] single-pk)
-  )
 
 ;; CGI params might be single value, or might be vector. Deal with it.
 ;; Some cases expect multiple values, but here we need a single primary key, so just take the first.
@@ -281,7 +304,6 @@
                      {:d_state "s_new_person" :page_name page_name})]
     (reset! html-out html-result)))
 
-;; save-person
 (defn save-person []
   (sql-insert-person db @params))
 
@@ -291,13 +313,6 @@
 ;; There should be a formal way to use a param to change the state.
 (defn back-state []
   (set-params (assoc @params :d_state (:prev_state @params))))
-
-  ;; (let [page_name "html/new_person.html"
-  ;;       html-result (my-render
-  ;;                    (slurp page_name)
-  ;;                    {:d_state "s_new_person" :page_name page_name})]
-  ;;   (reset! html-out html-result)))
-
 
 ;; Quick description of v5 state transition table format.
 ;; Hashmap of state names
@@ -329,7 +344,8 @@
   (machine.util/check-infinite :test_config table)
   )
 
-(declare draw-start-page)
+;; 2026-03-20 We needed this last week, but now we don't. What changed??
+;; (declare draw-start-page)
 
 ;; Change the return value to be your default starting state. Was :test_conf
 (defn default-state [] :s_start_page)
@@ -342,14 +358,17 @@
 ;; Don't confuse or conflate d_state with the current state.
 (def table
   {:s_start_page
-   [[:s_populate_db populate-db-wrapper nil]
+   [ ;; [:s_populate_db populate-db-wrapper nil]
+    [:s_previous previous-photo nil]
+    [:s_jump jump-to nil]
     [:s_edit nil :s_photo_page]
     [:s_new_person nil :s_new_person]
     [:s_new_place nil :s_new_place]
     [:s_places nil :s_place_page]
-    [:s_select_person nil :s_person_page]
+    [:s_choose_person nil :s_person_page]
     [:s_next next-photo nil]
     [:true draw-start-page nil]]
+
    :s_edit_person
    [[:s_save update-person nil]
     [:s_cancel draw-person-page :exit]
@@ -358,15 +377,16 @@
    [[:s_new nil :s_new_person]
     [:s_cancel nil :s_start_page]
     [:s_edit nil :s_edit_person]
-    [:s_back back-state :exit]
+    [:s_save_choice save-photo-person :s_photo_page]
     [:true draw-person-page nil]]
    :s_new_person
    [[:s_save save-person :s_person_page]
     [:s_cancel nil :s_person_page]
     [:true new-person nil]]
+
    :s_photo_page
    [[:s_cancel nil :s_start_page]
-    [:s_select_person nil :s_person_page]
+    [:s_choose_person save-photo :s_person_page]
     [:s_next save-photo nil]
     [:s_next next-photo nil]
     [:s_save save-photo nil]
@@ -376,14 +396,13 @@
    :s_choose_place
    [[:s_cancel nil nil]
     [:true draw-place-page nil]]
-
    :s_edit_place
    [[:s_save update-place nil]
     [:s_save draw-place-page :exit]
     [:s_cancel draw-place-page :exit]
     [:true draw-edit-place nil]]
    :s_place_page
-   [[:s_save_choice save-choice :s_photo_page]
+   [[:s_save_choice save-place-choice :s_photo_page]
     [:s_new nil :s_new_place]
     [:s_cancel nil :s_start_page]
     [:s_edit nil :s_edit_place]

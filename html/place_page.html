@@ -22,13 +22,17 @@
                 {{#choose_place}}
                 <input name="s_save_choice" value="Chose this place" type="submit">
                 {{/choose_place}}
-                photo_pk {{photo_pk}}
                 <br>
-                {{#place_list}}
-                <input type="checkbox" id="pid" name="place_pk" value="{{place_pk}}">
-                <label for="pid">{{place_name}} {{street1}} {{city}} {{state}} {{zip_code}} pk: {{place_pk}}</label>
+                photo_pk {{photo_pk}} / place_pk {{place_pk}}
                 <br>
-                {{/place_list}}
+                <fieldset style="text-align: left">
+                  <legend>Choose a place</legend>
+                  {{#place_list}}
+                    <input type="radio" id="{{place_pk}}" name="place_pk" value="{{place_pk}}" {{checked}} />
+                    <label for="{{place_pk}}">{{place_name}} pk: {{place_pk}}</label>
+                    <br>
+                    {{/place_list}}
+                </fieldset>
               </form>
             </div>
           </td>
