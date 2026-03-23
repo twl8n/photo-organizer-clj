@@ -35,11 +35,14 @@
     (map #(clojure.string/trim %) orig)
     (clojure.string/trim orig)))
 
+(def xrequest (atom {}))
+
 ;; Be specific that we only do dynamic requests to the /porg endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
 ;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
 (defn handler
   [request]
+  (reset! xrequest request) ;; keep this for future debugging?
   (if (not (some? (re-matches #".*/porg[/]*" (:uri request))))
     ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
     (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]

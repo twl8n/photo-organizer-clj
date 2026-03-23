@@ -26,6 +26,19 @@ Can Clojure read command line args? Use command line arg to switch to dev config
 
 todo:
 
+- 2026-03-22 Can't clear states during traverse because the traverse is already being called, and an internal copy of the
+  "state". It would need to call functions to get state instead of using keywords. That would help, and then
+  we could set/clear state dynamically.
+
+- Is my Emacs missing cider-nrepl plugin?
+  WARNING: CIDER requires cider-nrepl to be fully functional. Some features will not be available without it! (More information)
+
+- What is this error? Occurs seconds after cider-jack-in, change ns to porg.core, compile porg.core, but haven't run anything.
+
+java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
+
+See ~/java-error.tmp
+
 - ? Is there any way that "back" works? Currently use s_save_choice
 <input name="s_back" value="Back/Previous" type="submit">
 <br>
@@ -36,6 +49,17 @@ x Add "jump to" on start page.
 + Add ability to edit photo > person > new person > choose person > back to photo.
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
+
+- Add ipv6
+(defn get-client-ip [req]
+  (if-let [ips (get-in req [:headers "x-forwarded-for"])]
+    (-> ips (clojure.string/split #",") first)
+    (:remote-addr req)))
+
+;; This might allow ipv6:
+;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
+
+    
 x Add previous photo button
 x Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
 
@@ -181,9 +205,6 @@ M-x -r-c-bu RET cider-repl-clear-buffer
 C-c C-z 	    switch between the REPL and a Clojure file
 M-.             jump to the source
 C-c C-d C-d     view the documentation 
-
-todo: Is my Emacs missing cider-nrepl plugin?
-WARNING: CIDER requires cider-nrepl to be fully functional. Some features will not be available without it! (More information)
 
 #### config
 

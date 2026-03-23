@@ -67,6 +67,8 @@
 
 ;; 2026-03-16 user code below this line.
 
+;; (str/trim (:out (shell/sh "uuidgen")))
+
 (defn get_wh [full_name]
   (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
                                       (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
@@ -140,6 +142,7 @@
       (sql-insert-photo-person db {:photo_fk photo_fk :person_fk person_fk}))))
 
 (defn save-photo []
+  (pp/pprint @params)
   (sql-save-photo db @params)
   (save-photo-person))
 
@@ -164,6 +167,7 @@
 (defn newline-to-br [some-text]
   (str/replace some-text #"[\n\r]{2}" "<br>"))
 
+;; I'm pretty sure this can't work due to "state" being held internally in machine.util/traverse.
 (defn clear_continue []
   (swap! params #(dissoc % :continue)))
 
@@ -172,7 +176,7 @@
   (let [photo-map (if (number? (pk-helper (:photo_pk @params))) (sql-select-photo db @params) (sql-firstnon db))
         pic_root_path (:pic_root_path (config-data))
         web-params (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
-                          @params
+                          (dissoc @params :s_choose_place)
                           photo-map
                           (sql-records-found db))
         html-result (my-render
@@ -232,19 +236,26 @@
 
 ;; We can come here from start page or photo page, so we might have place_pk or place_fk.
 (defn draw-place-page []
-  (let [chose_place (if (:s_choose_place @params) {:choose_place true} nil)
+  (let [chose_place (if (not-empty (:s_choose_place @params)) {:choose_place true} nil)
         d_state "s_place_page"
         place-seq (place-checkbox-helper (:photo_pk @params));; (sql-select-all-place db)
         page_name "html/place_page.html"
         web-params (merge
                     chose_place
                     {:d_state d_state
+                     :s_choose_place (:s_choose_place @params)
                      :photo_pk (:photo_pk @params)
                      :place_pk (or (:place_fk @params) (:place_pk @params))
                      :page_name page_name
                      :place_list place-seq})
         html-result (my-render (slurp page_name) web-params)]
     (reset! html-out html-result)))
+
+;; 2026-03-22 Modified machine.util/traverse to support *not* traversing when the state-fn returns explicit false.
+;; Unclear if this will break anything. Only stopping on false means legacy functions that return nil are still ok.
+;; Might be best to bite the bullet and upgrade all state-fns to have explicit boolean returns.
+(defn have-place-pk? []
+  (contains? @params :place_pk))
 
 (defn draw-edit-place []
   (let [d_state "s_edit_place"
@@ -253,7 +264,9 @@
         html-result (my-render
                      (slurp page_name)
                      (merge
-                      {:d_state d_state :page_name page_name}
+                      {:d_state d_state
+                       :photo_pk (:photo_pk @params)
+                       :page_name page_name}
                       place-seq))]
     (reset! html-out html-result)))
 
@@ -263,7 +276,10 @@
         html-result (my-render
                      (slurp page_name)
                      (merge
-                      {:d_state d_state :page_name page_name}))]
+                      {:d_state d_state
+                       :photo_pk (:photo_pk @params)
+                       :s_choose_place (:s_choose_place @params)
+                       :page_name page_name}))]
     (reset! html-out html-result)))
 
 (defn save-place []
@@ -271,6 +287,10 @@
 
 (defn update-place []
   (sql-update-place db @params))
+
+;; Can't clear state by doing this:
+;;     (set-params (dissoc @params :s_choose_place)) ;; Need to clear this now that we're done.
+;; The "state" is being held internally inside machine.util/traverse.
 
 (defn save-place-choice []
   (let [working-params {:photo_pk (:photo_pk @params) :place_fk (:place_pk @params)}]
@@ -314,16 +334,23 @@
 (defn back-state []
   (set-params (assoc @params :d_state (:prev_state @params))))
 
-;; Quick description of v5 state transition table format.
-;; Hashmap of state names
-;; Values in the hashmap are lists (of lists) of transitions for that state.
-;; Transition list is: state-key function-symbol next-state
-;; If state-key exists in data known to the state machine then true and perform the action.
-;; some-fn-symbol is a function that performs the action.
-;; If the function returns true, then transitionn to :other-state.
-;; If action returns false, iterate through transitions.
-;; State-key true is always true.
-;; If the :other-state (next state) is nil, continue to iterate over transitions.
+(defn edit-nn
+  "If we have valid user entered photo pk use it else use the normal photo pk from params"
+  []
+  (let [nn_photo_pk (pk-helper (:nn_photo_pk @params))
+        local_photo_pk (if (number? nn_photo_pk) nn_photo_pk (:photo_pk @params))]
+    (set-params (assoc @params :photo_pk local_photo_pk))))
+
+;; 2026-03-22 Quick description of v5 state transition table format. Hashmap of state names Values in the hashmap are
+;; lists (of lists) of transitions for that state. Transition list is: state-key function-symbol-action next-state If
+;; state-key exists in data known to the state machine then true and perform the action. function-symbol-action is a
+;; function that performs an action presumably with side effects. It is tested for false, but true and nil are both true (to preserve
+;; legacy functions)
+
+;; If the function returns true or nil, then transitionn to :other-state.
+;; If action returns false, continue to 
+;; iterate through transitions. State-key true is always true. If the :other-state (next state) is nil,
+;; continue to iterate over transitions.
 
 (comment
   ;; This sort of describes the map of lists of lists that is the state table.
@@ -353,6 +380,9 @@
 ;; 2026-03-18 check boolean state function and do things depending on true/false, like don't change to new state?
 ;; Combine that with explicit exit or error cases?
 
+;; 2026-03-22 state-fn (the middle value) is tested for returning false. If false, will not transition to the third value.
+;; This behaviour preserves legacy function, but allows us to explicitly return false.
+
 ;; next state must be a keyword, probably also needs to exist in the table.
 ;; nil is ok as a fn-symbol
 ;; Don't confuse or conflate d_state with the current state.
@@ -362,10 +392,11 @@
     [:s_previous previous-photo nil]
     [:s_jump jump-to nil]
     [:s_edit nil :s_photo_page]
+    [:s_edit_nn edit-nn :s_photo_page]
     [:s_new_person nil :s_new_person]
     [:s_new_place nil :s_new_place]
     [:s_places nil :s_place_page]
-    [:s_choose_person nil :s_person_page]
+    [:s_show_person nil :s_person_page]
     [:s_next next-photo nil]
     [:true draw-start-page nil]]
 
@@ -396,13 +427,19 @@
    :s_choose_place
    [[:s_cancel nil nil]
     [:true draw-place-page nil]]
+
    :s_edit_place
    [[:s_save update-place nil]
     [:s_save draw-place-page :exit]
     [:s_cancel draw-place-page :exit]
-    [:true draw-edit-place nil]]
+    [:true have-place-pk? :s_core_edit]
+    [:true draw-place-page nil]]
+   :s_core_edit
+   [[:true draw-edit-place nil]]
+
    :s_place_page
-   [[:s_save_choice save-place-choice :s_photo_page]
+   [[:s_save_choice save-place-choice nil]
+    [:s_save_choice draw-photo-page :exit]
     [:s_new nil :s_new_place]
     [:s_cancel nil :s_start_page]
     [:s_edit nil :s_edit_place]

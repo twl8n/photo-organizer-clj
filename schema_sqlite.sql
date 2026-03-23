@@ -7,6 +7,14 @@ create table "config"
         value text
 );
 
+create table "user"
+    (
+        user_pk integer primary key autoincrement,
+        user_name text,
+        uuid text,
+        photo_pk integer,
+        client_ip_addr text
+);
 insert into config (name,value)
 values ("test", 12345);
 
@@ -47,6 +55,9 @@ create table "person"
     (
 	person_pk integer primary key autoincrement,
         name text,
+        pdesc text, -- description for this person
+        birth_date text,
+        death_date text,
         canonical_photo_fk integer
         );
 
