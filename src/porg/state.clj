@@ -184,6 +184,10 @@
                      web-params)]
     (reset! html-out html-result)))
 
+(comment
+  (my-render (slurp "html/start_page.html") @params)
+  )
+
 ;; Use and 'or' so that this will work if @params is uninitialized.
 (defn next-photo []
   (set-params (merge @params
@@ -254,6 +258,9 @@
 ;; 2026-03-22 Modified machine.util/traverse to support *not* traversing when the state-fn returns explicit false.
 ;; Unclear if this will break anything. Only stopping on false means legacy functions that return nil are still ok.
 ;; Might be best to bite the bullet and upgrade all state-fns to have explicit boolean returns.
+
+;; 2026-03-23 Modified machine.util/if-arg to support functions that return a boolean, in addition to keyword
+;; testing. Works with the state table here, and have-place-pk?
 (defn have-place-pk? []
   (contains? @params :place_pk))
 
@@ -432,10 +439,8 @@
    [[:s_save update-place nil]
     [:s_save draw-place-page :exit]
     [:s_cancel draw-place-page :exit]
-    [:true have-place-pk? :s_core_edit]
+    [have-place-pk? draw-edit-place :exit]
     [:true draw-place-page nil]]
-   :s_core_edit
-   [[:true draw-edit-place nil]]
 
    :s_place_page
    [[:s_save_choice save-place-choice nil]

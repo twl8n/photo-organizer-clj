@@ -52,14 +52,14 @@
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
                         (assoc yy :d_state (or (keyword (:d_state yy)) (porg.state/default-state))))]
-      ;; (printf "temp-params:") (pp/pprint temp-params)
       (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)
-      (run! #(machine.util/add-state %) (keys temp-params))
+      (machine.util/set-app-state temp-params)
+
       ;; Assume that :d_state always has some valid value. I wonder if the state table supports nil as value?
       ;; (get yy nil) works but (nil yy) does not, so nil is apparently a valid map key.
-      (let [res (machine.util/traverse (:d_state temp-params) porg.state/table)]
+      (let [res (machine.util/traverse (:d_state temp-params) porg.state/table machine.util/if-arg)]
         (when res (prn res)))
 
       ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
@@ -126,12 +126,20 @@
       (wrap-file "image")
       (wrap-params)))
 
-
 ;; Unclear how defonce and lein ring server headless will play together.
 ;; Use port 8081 since my content manager uses port 8080. Unlikely both will be running at the same time, but...
 (defn ds []
   (defonce server (ringa/run-jetty (make-app) {:port 8081 :join? false})))
 
+(comment
+  (shell/sh "open"
+            "http://localhost:8081/porg")
+  (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
+            "--private-window"
+            "http://localhost:8081/porg")
+  (shell/sh "open" "--args" "--private-window" "-u" "http://localhost:8081/porg")
+  ;; open -a /bin/sh --args "-c" "/Applications/Firefox.app/Contents/MacOS/firefox -private-window http://localhost:8081/porg"
+  )
 (defn -main
   "Parse the states.dat file."
   [& args]
@@ -143,4 +151,8 @@
   (ds)
   (prn "server: " server)
   (.start server)
-  (shell/sh "open" "http://localhost:8081/porg"))
+  (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
+            "--private-window"
+            "http://localhost:8081/porg"))
+
+

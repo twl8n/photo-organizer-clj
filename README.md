@@ -22,9 +22,11 @@ Need test/dev mode that works on a small photo directory.
 
 Can Clojure read command line args? Use command line arg to switch to dev config.
 
-`clj -X cmgr.core/-main`
+`clj -X porg.core/-main`
 
 todo:
+
+- Edit person loses photo_pk and choose-this (whatever that is).
 
 - 2026-03-22 Can't clear states during traverse because the traverse is already being called, and an internal copy of the
   "state". It would need to call functions to get state instead of using keywords. That would help, and then
