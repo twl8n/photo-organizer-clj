@@ -37,14 +37,19 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 - What is this error? Occurs seconds after cider-jack-in, change ns to porg.core, compile porg.core, but haven't run anything.
 
+```
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
+```
 
 See ~/java-error.tmp
 
 - ? Is there any way that "back" works? Currently use s_save_choice
+
+```
 <input name="s_back" value="Back/Previous" type="submit">
 <br>
 [:s_back back-state :exit]
+```
 
 - x Add "jump to" on start page.
 - Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
@@ -53,36 +58,39 @@ See ~/java-error.tmp
 - Add ability to mark image as duplicate, and link to other copies of same image.
 
 - Add ipv6
+
+```
 (defn get-client-ip [req]
   (if-let [ips (get-in req [:headers "x-forwarded-for"])]
     (-> ips (clojure.string/split #",") first)
     (:remote-addr req)))
-
 ;; This might allow ipv6:
 ;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
-
+```
     
 - x Add previous photo button
 - x Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
 
 - 2026-03-21 Did I try to compile the code before the nrepl was fully running? 
-java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
+
+`java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null`
 
 - 2026-03-21 Fixed (work around) by cider-load-buffer on core.clj. How to get cider to load all the .clj buffers? Or at least core.clj and state.clj?
 
+```
 (porg.core/-main)
 Execution error (ClassNotFoundException) at java.net.URLClassLoader/findClass (URLClassLoader.java:445).
 porg.core
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
+```
 
-
-- 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
+- + 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
 table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
 - 2026-03-20 Change places where {{name}} needs to be {{place_name}}
 - 2026-03-16 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
 - 2026-03-16  The symlink is hard coded, created manually. Should be in config, created by this app.
-;; The directory path is hard coded here, and should be in config.
 
+`;; The directory path is hard coded here, and should be in config.`
 
 - 2026-03-16 Create thumbnails and decide if they will reside in the db (yes) or on disk in a parallel directory tree
 
@@ -96,7 +104,7 @@ table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
 
 - x Add an "open" call to open the browser automatically.
 
-- Physically rotate files that have a virtual rotation. Not all software works properly with rotation meta
+- Physically rotate image files that have a virtual rotation. Not all software works properly with rotation meta
 data.
 
 - ! write a better quick description of the V5 state table in state.clj
