@@ -130,18 +130,25 @@ clj -M:nREPL -m nrepl.cmdline
 
 #### NetPBM 
 
+```
 # This "rotate 90" is -90 aka 90 CCW
 > jpegtopnm -dumpexif IMG_0494.JPG 2>&1 > /dev/null | grep -i orient
 jpegtopnm: Orientation  : Rotate 90
+```
 
+```
 # jpegtran "-rotate 90" is +90 aka 90 CW
-10213  jpegtran -rotate 90 IMG_0494.JPG > tmp.jpg
+jpegtran -rotate 90 IMG_0494.JPG > tmp.jpg
+```
 
-0494 is rotated 6, and this conversion produces a non-rotated image:
+```
+# 0494 is rotated 6, and this conversion produces a non-rotated image:
 jpegtopnm IMG_0494.JPG | pamscale -height=1936 - | pnmtojpeg - > IMG_R0494.JPG
+```
 
-jpegtopnm -traceexif IMG_0494.JPG > tmp.pnm
+`jpegtopnm -traceexif IMG_0494.JPG > tmp.pnm`
 
+```
 > jpegtopnm -dumpexif IMG_0494.JPG > tmp.pnm
 jpegtopnm: WRITING PPM FILE
 jpegtopnm: EXIF INFO:
@@ -159,7 +166,9 @@ jpegtopnm: Exposure bias: 0.00
 jpegtopnm: Metering Mode: spot
 jpegtopnm: Exposure     : program (auto)
 jpegtopnm: Focal length :  3.0mm
+```
 
+```
 # redirect stderr to stdout, and stdout to /dev/null, new stdout will be piped:
 jpegtopnm -dumpexif IMG_0494.JPG 2>&1 > /dev/null | perl -ne 'print $_ if m/.*Orientation.*(\d+)$/;'
 
@@ -173,7 +182,7 @@ jpegtopnm IMG_3065.JPG | pamscale -height=1936 - | pnmpaste - 551 1 tmp.ppm > IM
 
 # works, pixel x y are zero based apparently
 jpegtopnm IMG_3065.JPG | pnmrotate -90 - | pamscale -xyfit 2592 1936 - | pnmpaste - 550 0 tmp.ppm | pnmtojpeg - > IMG_3065R.jpg
-
+```
 
 #### Development in Emacs
 
