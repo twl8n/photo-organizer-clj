@@ -26,7 +26,7 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo:
 
-- + Edit person loses photo_pk and choose-this.
+- P Edit person loses photo_pk and choose-this.
 
 - 2026-03-22 Can't clear states during traverse because the traverse is already being called, and an internal copy of the
   "state". It would need to call functions to get state instead of using keywords. That would help, and then
@@ -51,9 +51,9 @@ See ~/java-error.tmp
 [:s_back back-state :exit]
 ```
 
-- x Add "jump to" on start page.
+- X Add "jump to" on start page.
 - Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
-- `+` Add ability to edit photo > person > new person > choose person > back to photo.
+- P Add ability to edit photo > person > new person > choose person > back to photo.
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
 
@@ -68,8 +68,8 @@ See ~/java-error.tmp
 ;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
 ```
     
-- x Add previous photo button
-- x Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
+- X Add previous photo button
+- X Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
 
 - 2026-03-21 Did I try to compile the code before the nrepl was fully running? 
 
@@ -84,7 +84,7 @@ porg.core
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
 ```
 
-- + 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
+- P 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
 table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
 - 2026-03-20 Change places where {{name}} needs to be {{place_name}}
 - 2026-03-16 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
@@ -102,7 +102,7 @@ table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
 
 - update deps to recent versions
 
-- x Add an "open" call to open the browser automatically.
+- X Add an "open" call to open the browser automatically.
 
 - Physically rotate image files that have a virtual rotation. Not all software works properly with rotation meta
 data.
