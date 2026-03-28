@@ -1,5 +1,5 @@
-# photo-organizer-clj
-Organize a photo collection. Identify, group, and edit: location, person(s), film roll.
+#### Photo Organizer CLJ
+Manually annotate and organize a photo collection. Identify, group, and edit: location, person(s), dates/ranges, film roll, virtual albums.
 
 Web application, multiuser. 
 
@@ -15,18 +15,18 @@ Photo has 3 dates. If photo has a known date, all three can be identical, otherw
 photo_max_date. What value in photo_date? Average of min and max? If all date searches are based on a range,
 why have photo_date?
 
-The same photo can be in multiiple virtual rolls, so virtual roll needs an intermediate table vroll_order with
+The same photo can be in multiiple virtual rolls, so virtual roll has a linking table, vroll_order, with
 photo order.
 
 Need test/dev mode that works on a small photo directory. 
 
-Can Clojure read command line args? Use command line arg to switch to dev config.
+Can Clojure read command line args? (Yes.) Use command line arg to switch to dev config.
 
 `clj -X porg.core/-main`
 
-todo:
+#### todo:
 
-- Edit person loses photo_pk and choose-this (whatever that is).
+- + Edit person loses photo_pk and choose-this.
 
 - 2026-03-22 Can't clear states during traverse because the traverse is already being called, and an internal copy of the
   "state". It would need to call functions to get state instead of using keywords. That would help, and then
@@ -46,9 +46,9 @@ See ~/java-error.tmp
 <br>
 [:s_back back-state :exit]
 
-x Add "jump to" on start page.
+- x Add "jump to" on start page.
 - Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
-+ Add ability to edit photo > person > new person > choose person > back to photo.
+- + Add ability to edit photo > person > new person > choose person > back to photo.
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
 
@@ -62,8 +62,8 @@ x Add "jump to" on start page.
 ;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
 
     
-x Add previous photo button
-x Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
+- x Add previous photo button
+- x Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
 
 - 2026-03-21 Did I try to compile the code before the nrepl was fully running? 
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
@@ -94,17 +94,17 @@ table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
 
 - update deps to recent versions
 
-x Add an "open" call to open the browser automatically.
+- x Add an "open" call to open the browser automatically.
 
 - Physically rotate files that have a virtual rotation. Not all software works properly with rotation meta
 data.
 
-! write a better quick description of the V5 state table in state.clj
+- ! write a better quick description of the V5 state table in state.clj
 
 - allow/require naked base url. Remove/change the regex match #".*/porg[/]*". Either redirect '/porg` or make
   it like it never existed.
 
-quickstart:
+#### Quickstart:
 
 ```
 cd ~/
@@ -113,7 +113,7 @@ sqlite3 porg.db
 insert into config values ("image-path-base", "/Volumes/external/family/");
 ```
 
-Run the app:
+#### Run the app:
 
 `clj -X porg.core/-main`
 
@@ -132,16 +132,12 @@ clj -M:nREPL -m nrepl.cmdline
 
 ```
 # This "rotate 90" is -90 aka 90 CCW
-> jpegtopnm -dumpexif IMG_0494.JPG 2>&1 > /dev/null | grep -i orient
+jpegtopnm -dumpexif IMG_0494.JPG 2>&1 > /dev/null | grep -i orient
 jpegtopnm: Orientation  : Rotate 90
-```
 
-```
 # jpegtran "-rotate 90" is +90 aka 90 CW
 jpegtran -rotate 90 IMG_0494.JPG > tmp.jpg
-```
 
-```
 # 0494 is rotated 6, and this conversion produces a non-rotated image:
 jpegtopnm IMG_0494.JPG | pamscale -height=1936 - | pnmtojpeg - > IMG_R0494.JPG
 ```
@@ -217,7 +213,7 @@ C-c C-z 	    switch between the REPL and a Clojure file
 M-.             jump to the source
 C-c C-d C-d     view the documentation 
 
-#### config
+#### Config
 
 ```
 cd ~/
