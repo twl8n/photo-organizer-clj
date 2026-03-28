@@ -53,7 +53,7 @@ See ~/java-error.tmp
 
 - x Add "jump to" on start page.
 - Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
-- `+ Add ability to edit photo > person > new person > choose person > back to photo.
+- `+` Add ability to edit photo > person > new person > choose person > back to photo.
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
 
