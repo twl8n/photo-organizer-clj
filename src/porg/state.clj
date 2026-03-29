@@ -114,12 +114,14 @@
         pic_root_path (:pic_root_path (config-data))
         page_name "html/photo_page.html"
         photo-rec (sql-select-photo db {:photo_pk photo_pk})
+        all-place (place-checkbox-helper photo_pk (:place_fk photo-rec))
         html-result (my-render
                      (slurp page_name)
                      (merge {:d_state "s_photo_page"
                              :photo_pk photo_pk
                              :page_name page_name
                              :pic_root_path pic_root_path
+                             :place_list all-place
                              :person_display (sql-select-photo-person db {:photo_fk photo_pk})
                              :person_list person-seq}
                             photo-rec))]
@@ -141,10 +143,17 @@
     (doseq [person_fk pvec]
       (sql-insert-photo-person db {:photo_fk photo_fk :person_fk person_fk}))))
 
+;; Table photo has place_fk. Table place has place_pk.
+;; Need to change context when using the place table key to update the photo table.
+
 (defn save-photo []
-  (pp/pprint @params)
-  (sql-save-photo db @params)
-  (save-photo-person))
+  (let [test-fk (:place_fk @params)
+        place_fk (if (not (empty? test-fk))
+                   test-fk
+                   (:place_pk @params))
+        working-params (assoc @params :place_fk place_fk)]
+        (sql-save-photo db working-params)
+        (save-photo-person)))
 
 (defn test_config []
   (let [ready-data {:vals (test-config-data) 
@@ -215,7 +224,6 @@
 (defn noop [] true)
 
 (defn draw-person-page []
-  (println "draw-person-page")
   (let [choose-person-bool (if (:s_choose_person @params) true false)
         person-seq (person-checkbox-helper (:photo_pk @params))
         old-person-seq (sql-select-all-person db)
@@ -234,9 +242,11 @@
 ;; Convert the db value wih (str) before comparing. 
 (defn place-checkbox-helper
   "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
-  [photo_pk]
-  (let [ap (sql-select-all-place db)]
-    (map (fn [xx] (if (= (str (:place_pk xx)) (:place_fk @params)) (assoc xx :checked "checked") xx)) ap)))
+  ([photo_pk]
+   (place-checkbox-helper photo_pk (:place_fk @params)))
+  ([photo_pk place_fk]
+   (let [ap (sql-select-all-place db)]
+     (map (fn [xx] (if (= (str (:place_pk xx)) (str place_fk)) (assoc xx :checked "checked") xx)) ap))))
 
 ;; We can come here from start page or photo page, so we might have place_pk or place_fk.
 (defn draw-place-page []
@@ -318,17 +328,22 @@
                     tpk)
         html-result (my-render
                      (slurp page_name)
-                     (merge {:d_state "s_edit_person" :page_name page_name}
+                     (merge {:d_state "s_edit_person"
+                             :page_name page_name
+                             :photo_pk (:photo_pk @params)
+                             :related (sql-related-person db {:related_pk single-pk})}
                             (sql-select-person db {:person_pk single-pk})))]
     (reset! html-out html-result)))
 
-(defn new-person
+(defn draw-new-person
   ;; Might be merged with edit-person, sending nil person_pk
   []
   (let [page_name "html/new_person.html"
         html-result (my-render
                      (slurp page_name)
-                     {:d_state "s_new_person" :page_name page_name})]
+                     {:d_state "s_new_person"
+                      :photo_pk (:photo_pk @params)
+                      :page_name page_name})]
     (reset! html-out html-result)))
 
 (defn save-person []
@@ -396,7 +411,6 @@
 (def table
   {:s_start_page
    [ ;; [:s_populate_db populate-db-wrapper nil]
-    [:s_previous previous-photo nil]
     [:s_jump jump-to nil]
     [:s_edit nil :s_photo_page]
     [:s_edit_nn edit-nn :s_photo_page]
@@ -404,11 +418,13 @@
     [:s_new_place nil :s_new_place]
     [:s_places nil :s_place_page]
     [:s_show_person nil :s_person_page]
+    [:s_previous previous-photo nil]
     [:s_next next-photo nil]
     [:true draw-start-page nil]]
 
    :s_edit_person
    [[:s_save update-person nil]
+    [:s_save draw-person-page :exit]
     [:s_cancel draw-person-page :exit]
     [:true draw-edit-person nil]]
    :s_person_page
@@ -416,15 +432,18 @@
     [:s_cancel nil :s_start_page]
     [:s_edit nil :s_edit_person]
     [:s_save_choice save-photo-person :s_photo_page]
+    [:s_edit_photo draw-photo-page :exit]
     [:true draw-person-page nil]]
    :s_new_person
    [[:s_save save-person :s_person_page]
     [:s_cancel nil :s_person_page]
-    [:true new-person nil]]
+    [:true draw-new-person nil]]
 
    :s_photo_page
    [[:s_cancel nil :s_start_page]
     [:s_choose_person save-photo :s_person_page]
+    [:s_previous save-photo nil]
+    [:s_previous previous-photo nil]
     [:s_next save-photo nil]
     [:s_next next-photo nil]
     [:s_save save-photo nil]
@@ -448,6 +467,7 @@
     [:s_new nil :s_new_place]
     [:s_cancel nil :s_start_page]
     [:s_edit nil :s_edit_place]
+    [:s_edit_photo draw-photo-page :exit]
     [:true draw-place-page nil]]
    :s_new_place
    [[:s_save save-place :s_place_page]

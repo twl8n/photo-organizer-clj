@@ -56,13 +56,28 @@ select * from (
 -- :doc select all fields from the person table
 select * from person order by name asc;
 
+-- :name sql-related-person :? :*
+select * from person where
+    related_pk = :related_pk;
+
 -- :name sql-insert-person :! :n
 -- :doc insert a new person
-insert into person (name) values (:name);
+insert into person
+    (name, pdesc, birth_date, death_date, canonical_photo_fk, related_pk, is_primary)
+    values
+    (:name, :pdesc, :birth_date, :death_date, :canonical_photo_fk, :related_pk, :is_primary);
 
 -- :name sql-update-person :! :n
 -- :doc update person
-update person set name=:name where person_pk=:person_pk;
+update person set
+    name=:name,
+    pdesc=:pdesc,
+    birth_date=:birth_date,
+    death_date=:death_date,
+    canonical_photo_fk=:canonical_photo_fk,
+    related_pk=:related_pk,
+    is_primary=:is_primary
+where person_pk=:person_pk;
 
 -- :name sql-select-person :? :1
 select * from person where person_pk=:person_pk;

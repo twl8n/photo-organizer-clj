@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Start Page</title>
+    <title>New Person/Edit Person</title>
   </head>
   <body bgcolor="#ffffff">
     <table border="0" cellpadding="3" cellspacing="0" width="800">
@@ -14,14 +14,24 @@
                 <input name="prev_state" value="{{prev_state}}" type="hidden">
                 <input name="photo_pk" value="{{photo_pk}}" type="hidden">
                 <input name="person_pk" value="{{person_pk}}" type="hidden">
-                person_pk {{person_pk}}
+                person_pk {{person_pk}} / photo_pk {{photo_pk}}
                 <br>
-                Name: <input name="name" value="{{name}}" type="text">
-                <input name="s_cancel" value="Cancel" type="submit">
+                Name: <input name="name" value="{{name}}" type="text"><br>
+                Description: <input name="pdesc" value="{{pdesc}}" type="text"><br>
+                Birth Date: <input name="birth_date" value="{{birth_date}}" type="text"><br>
+                Death Date: <input name="death_date" value="{{death_date}}" type="text"><br>
+                Photo pk <input name="canonical_photo_fk" value="{{canonical_photo_fk}}" type="text"><br>
+                Related Person pk <input name="related_pk" value="{{related_pk}}" type="text"><br>
+                Is Primary: <input name="is_primary" value="{{is_primary}}" type="text" /> (1 or zero)
                 <br>
                 <input name="s_save" value="Save" type="submit">
                 <br>
+                <input name="s_cancel" value="Cancel" type="submit">
+                <br>
               </form>
+              {{#related}}
+              {{name}} {{person_pk}} {{pdesc}}<br>
+              {{/related}}
             </div>
           </td>
         </tr>

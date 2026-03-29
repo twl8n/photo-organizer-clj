@@ -2,53 +2,73 @@
 <html>
   <head>
     <title>Start Page</title>
+    <style>
+      * {
+          box-sizing: border-box;
+      }
+      .wrapper {
+          max-width: 940px;
+          margin: 0 auto;
+      }
+      .wrapper > div {
+          border: 2px solid rgb(233 171 88);
+          border-radius: 5px;
+          background-color: #99cccc; /* rgb(233 171 88 / 50%); */
+          padding: 1em;
+          color: black; /* #d9480f; */
+      }
+      .wrapper {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          grid-auto-rows: minmax(100px, auto);
+      }
+      .pane1 {
+          grid-column: 1 / 1;
+          grid-row: 1/3;
+      }
+      .pane2 {
+          grid-column: 2 / 4;
+          grid-row: 1 / 3;
+      }
+    </style>
   </head>
   <body bgcolor="#ffffff">
-    <table border="0" cellpadding="3" cellspacing="0" width="800">
-      <tbody>
-        <tr>
-          <td bgcolor="#99cccc" valign="top">
-            Photo directory is {{pic_root_path}}<br>
-            You have {{recordsfound}} images.
+    <div class="wrapper">
+      <div class="pane1">
+        Photo directory is {{pic_root_path}}<br>
+        You have {{recordsfound}} images.
+        <br>
+        {{pathfile_name}}
+        <form action="./porg" method="post">
+          <input name="d_state" value="s_start_page" type="hidden">
+          <input name="photo_pk" value="{{photo_pk}}" type="hidden">
+          <div style="text-align: left;">
+            <input name="s_populate_db" value="Populate DB" type="submit" disabled>
             <br>
-            {{pathfile_name}}
-          </td>
-          <td rowspan="5" style="height: 400px;">
-            <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}">
-          </td>
-        </tr>
-        <tr>
-          <td bgcolor="#99cccc" valign="top">
-            <form action="./porg" method="post">
-              <input name="d_state" value="s_start_page" type="hidden">
-              <input name="photo_pk" value="{{photo_pk}}" type="hidden">
-              <div style="text-align: left;">
-                <input name="s_populate_db" value="Populate DB" type="submit" disabled>
-                <br>
-                <input name="s_previous" value="Previous Photo" type="submit">&nbsp;&nbsp;<input name="s_next" value="Next Photo" type="submit">
-                <br>
-                  <input name="s_jump" value="Jump to:" type="submit">&nbsp;&nbsp;<input name="jump_pk" value="" type="text">
-                  <hr>
-                  <input name="s_places" value="View All Places" type="submit">
-                  <br>
-                  <input name="s_new_place" value="Add Place" type="submit">
-                  <hr>
-                  <input name="s_show_person" value="View All Persons" type="submit">
-                  <br>
-                  <input name="s_new_person" value="Add Person" type="submit">
-                <hr>
-                <input name="s_edit" value="Edit Photo" type="submit">
-                <hr>
-                <input name="s_edit_nn" value="Edit Photo" type="submit">
-                <input name="nn_photo_pk" value="{{photo_pk}}" type="text">
-              </form>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <br>
-    <br>
+            <input name="s_previous" value="Previous Photo" type="submit">&nbsp;&nbsp;<input name="s_next" value="Next Photo" type="submit">
+            <br>
+            <input name="s_jump" value="Jump to:" type="submit">&nbsp;&nbsp;<input name="jump_pk" value="" type="text">
+            <hr>
+            <input name="s_places" value="View All Places" type="submit">
+            <br>
+            <input name="s_new_place" value="Add Place" type="submit">
+            <hr>
+            <input name="s_show_person" value="View All Persons" type="submit">
+            <br>
+            <input name="s_new_person" value="Add Person" type="submit">
+            <hr>
+            <input name="s_edit" value="Edit Photo" type="submit">
+            <hr>
+            <input name="s_edit_nn" value="Edit Photo" type="submit">
+            <input name="nn_photo_pk" value="{{photo_pk}}" type="text">
+          </div>
+        </form>
+      </div>
+      <div class="pane2">
+        <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}">
+      </div>
+    </div>
     Template: start_page.html d_state: {{d_state}}
     <script>
       document.getElementById("scroll").scrollIntoView();

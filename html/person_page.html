@@ -26,6 +26,8 @@
                 <br>
                 photo_pk {{photo_pk}}
                 <br>
+                <input name="s_edit_photo" value="Edit photo {{photo_pk}}" type="submit">
+                <br>
                 {{#person_list}}
                 <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}" {{checked}}>
                 <label for="pid">{{name}} {{person_pk}}</label>

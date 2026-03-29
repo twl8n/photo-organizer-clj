@@ -50,7 +50,8 @@ create table "photo_person"
 );
 
 -- a person found in at least one photo.
--- every person presumably has a single canonical image.
+-- Initially assumed a single canonical image. That assumption is probably wrong.
+-- 
 create table "person"
     (
 	person_pk integer primary key autoincrement,
@@ -58,7 +59,9 @@ create table "person"
         pdesc text, -- description for this person
         birth_date text,
         death_date text,
-        canonical_photo_fk integer
+        canonical_photo_fk integer,
+        related_pk integer,
+        is_primary integer -- 0 or 1
         );
 
 -- place where photo was taken

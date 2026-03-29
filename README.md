@@ -24,24 +24,32 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 `clj -X porg.core/-main`
 
-#### todo:
+#### todo P=In Progress !=Important X=Completed
+
+- X update the schema to allow linking person records for name changes.
+alter table person add column related_pk integer;
+alter table person add column is_primary integer;
+
+- Should place_pk always be place_pk, even in other tables where it is currently place_fk? Swapping context is
+  frustrating, but conflating context might be worse? Figure this out and fix the code.
+
+- Change all params that should be numbers from strings to numbers, then clean up all the code checking for
+  and converting strings to numbers later on. Clojure doesn't have Perl DWIM, so work around.
 
 - P Edit person loses photo_pk and choose-this.
 
-- 2026-03-22 Can't clear states during traverse because the traverse is already being called, and an internal copy of the
-  "state". It would need to call functions to get state instead of using keywords. That would help, and then
-  we could set/clear state dynamically.
+- 2026-03-22 Can't clear states during traverse because the traverse is already being called, and has an
+  internal copy of the "state". Changing state would require new functions in machine.util. And probably using
+  functions instead of using keywords. Maybe then we could set/clear state dynamically.
 
-- Is my Emacs missing cider-nrepl plugin?
-  WARNING: CIDER requires cider-nrepl to be fully functional. Some features will not be available without it! (More information)
+- X (Solved: probably old version of Emacs and/or Cider.) Is my Emacs missing cider-nrepl plugin?
+`WARNING: CIDER requires cider-nrepl to be fully functional. Some features will not be available without it! (More information)`
 
-- What is this error? Occurs seconds after cider-jack-in, change ns to porg.core, compile porg.core, but haven't run anything.
+- X (Solved: probably old version of Emacs and/or Cider.) What is this error? Occurs seconds after cider-jack-in, change ns to porg.core, compile porg.core, but haven't run anything.
 
 ```
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
 ```
-
-See ~/java-error.tmp
 
 - ? Is there any way that "back" works? Currently use s_save_choice
 
