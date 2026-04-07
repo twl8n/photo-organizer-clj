@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Start Page</title>
+    <title>Place Page</title>
   </head>
   <body bgcolor="#ffffff">
     <table border="0" cellpadding="3" cellspacing="0" width="800">
@@ -10,19 +10,20 @@
           <td bgcolor="#99cccc" valign="top">
             <div align="center">
               <form action="./porg" method="post">
-                <input name="d_state" value="{{d_state}}" type="hidden">
+                <input name="{{curr_page_state}}" value="1" type="hidden">
+                <input name="userid" value="{{userid}}" type="hidden">
                 <input name="prev_state" value="{{pre_state}}" type="hidden">
                 <input name="photo_pk" value="{{photo_pk}}" type="hidden">
-                <input name="s_choose_place" value="{{s_choose_place}}" type="hidden">
+                <input name="{{want_place_val}}" value="1" type="hidden">
                 <input name="s_edit" value="Edit" type="submit">
                 <br>
                 <input name="s_cancel" value="Cancel" type="submit">
                 <br>
                 <input name="s_new" value="Add New" type="submit">
                 <br>
-                {{#choose_place}}
+                {{#want_place_bool}}
                 <input name="s_save_choice" value="Chose this place" type="submit">
-                {{/choose_place}}
+                {{/want_place_bool}}
                 <br>
                 photo_pk {{photo_pk}} / place_pk {{place_pk}}
                 <br>
@@ -44,7 +45,7 @@
     </table>
     <br>
     <br>
-    Template: {{page_name}} d_state: {{d_state}}
+    Template: {{page_name}} curr_page_state: {{curr_page_state}} userid: {{userid}}
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

@@ -49,7 +49,8 @@
     <form action="./porg" method="post">
       <div class="wrapper">
         <div class="pane1">
-          <input name="d_state" value="s_photo_page" type="hidden">
+          <input name="userid" value="{{userid}}" type="hidden">
+          <input name="{{curr_page_state}}" value="1" type="hidden">
           <input name="photo_pk" value="{{photo_pk}}" type="hidden">
           <input name="prev_state" value="s_photo_page" type="hidden">
           <img style="max-width: 300px; height: auto;" src="{{pathfile_name}}"><br>
@@ -70,9 +71,8 @@
             {{name}} <br>
             {{/person_display}}
           Place:
-            {{place_name}}
-            <input name="place_fk" value="{{place_fk}}" type="hidden"><br>
-            <input name="s_choose_place" value="Save and choose place" type="submit"><br>
+            {{place_name}}<br>
+            <input name="s_want_place" value="Save and choose place" type="submit"><br>
             <input name="s_choose_person" value="Save and choose person(s)" type="submit"><br>
           Albums or Vrolls:<br>
           <input name="s_next" value="Save + Edit Next Photo" type="submit"><br>
@@ -94,7 +94,7 @@
         </div>
       </div>
     </form>
-    Template: {{page_name}} d_state: {{d_state}}
+    Template: {{page_name}} curr_page_state: {{curr_page_state}}
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

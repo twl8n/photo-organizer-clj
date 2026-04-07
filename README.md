@@ -26,19 +26,50 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
-- X update the schema to allow linking person records for name changes.
-alter table person add column related_pk integer;
-alter table person add column is_primary integer;
+- P want_place not carried through new. Maybe not edit?
 
-- Should place_pk always be place_pk, even in other tables where it is currently place_fk? Swapping context is
-  frustrating, but conflating context might be worse? Figure this out and fix the code.
+- P State table needs explicit page name and (page? "foo") test for the dispatch. Fix long-standing confusion
+  over top level state sections, and individual keyword state tests. Maybe need (button? :s_cancel) or
+  (button? "s_cancel"). Clarify page-state and button-state.
+
+- P Finish userid and auth token for login. Start using the user db table.
+
+- Need a "notes" field for table place.
+
+- Bring back "Jump to first non annotated". Already have sql-firstnon, so just need html plumbing.
 
 - Change all params that should be numbers from strings to numbers, then clean up all the code checking for
   and converting strings to numbers later on. Clojure doesn't have Perl DWIM, so work around.
 
+- Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
+- Add user table (even without authentication) to keep user settings, history.
+- Add ability to mark image as duplicate, and link to other copies of same image.
+
+- X (ring supports ipv6 out of the box) Add ipv6
+
+```
+(defn get-client-ip [req]
+  (if-let [ips (get-in req [:headers "x-forwarded-for"])]
+    (-> ips (clojure.string/split #",") first)
+    (:remote-addr req)))
+;; This might allow ipv6:
+;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
+```
+    
+- Should place_pk always be place_pk, even in other tables where it is currently place_fk? Swapping context is
+  frustrating, but conflating context might be worse? Figure this out and fix the code.
+
 - P Edit person loses photo_pk and choose-this.
 
-- 2026-03-22 Can't clear states during traverse because the traverse is already being called, and has an
+- X Add Save + Previous photo button
+
+- X update the schema to allow linking person records for name changes.
+alter table person add column related_pk integer;
+alter table person add column is_primary integer;
+
+- X Link multiple person records for name changes.
+
+- X 2026-03-22 Can't clear states during traverse because the traverse is already being called, and has an
   internal copy of the "state". Changing state would require new functions in machine.util. And probably using
   functions instead of using keywords. Maybe then we could set/clear state dynamically.
 
@@ -60,22 +91,7 @@ java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.form
 ```
 
 - X Add "jump to" on start page.
-- Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
 - P Add ability to edit photo > person > new person > choose person > back to photo.
-- Add user table (even without authentication) to keep user settings, history.
-- Add ability to mark image as duplicate, and link to other copies of same image.
-
-- Add ipv6
-
-```
-(defn get-client-ip [req]
-  (if-let [ips (get-in req [:headers "x-forwarded-for"])]
-    (-> ips (clojure.string/split #",") first)
-    (:remote-addr req)))
-;; This might allow ipv6:
-;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
-```
-    
 - X Add previous photo button
 - X Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
 

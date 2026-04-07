@@ -16,6 +16,10 @@
 (hugsql/def-db-fns (clojure.java.io/as-file "full.sql"))
 (hugsql/def-sqlvec-fns (clojure.java.io/as-file "full.sql"))
 
+(def sysmsg (atom ""))
+(defn addmsg [msg] (swap! sysmsg #(str % " " msg)))
+(defn clrmsg [] (reset! sysmsg ""))
+
 ;; System wide config, with some defaults.
 (def config 
   (atom {:export-path (System/getenv "HOME")
@@ -108,7 +112,20 @@
   [pk]
   (try (Integer. pk) (catch Exception e nil)))
 
+;; :place_pk from the database is a number.
+;; :place_fk from the html is a string.
+;; Convert the db value wih (str) before comparing. 
+(defn place-checkbox-helper
+  "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
+  ([photo_pk]
+   (place-checkbox-helper photo_pk (:place_fk @params)))
+  ([photo_pk place_fk]
+   (let [ap (sql-select-all-place db)]
+     (map (fn [xx] (if (= (str (:place_pk xx)) (str place_fk)) (assoc xx :checked "checked") xx)) ap))))
+
+;; place_pk is the value in the html. In a photo context, the SQL is photo.place_fk.
 (defn draw-photo-page []
+  (addmsg "draw-photo-page\n")
   (let [photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
         person-seq (person-checkbox-helper photo_pk)
         pic_root_path (:pic_root_path (config-data))
@@ -117,7 +134,9 @@
         all-place (place-checkbox-helper photo_pk (:place_fk photo-rec))
         html-result (my-render
                      (slurp page_name)
-                     (merge {:d_state "s_photo_page"
+                     (merge {;; :d_state "s_photo_page"
+                             :curr_page_state "s_photo_page"
+                             :userid (:userid @params)
                              :photo_pk photo_pk
                              :page_name page_name
                              :pic_root_path pic_root_path
@@ -143,14 +162,25 @@
     (doseq [person_fk pvec]
       (sql-insert-photo-person db {:photo_fk photo_fk :person_fk person_fk}))))
 
-;; Table photo has place_fk. Table place has place_pk.
-;; Need to change context when using the place table key to update the photo table.
+;; Do What I Mean check anything for empty
+(defn dwim-empty? [thing]
+  (cond
+    (empty? (str thing)) true
+    (keyword? thing) false
+    (coll? thing) (some? (seq thing))
+    :else false)
+  )
+;; (try (empty? (seq thing)) (catch Exception e false)) false
 
+(comment
+  test-fk (:place_fk @params)
+  (if (not (empty? test-fk))
+    test-fk
+    (:place_pk @params))
+  )
+;; In a photo page context, photo_pk is the param key. Copy it to :place_fk for the SQL.
 (defn save-photo []
-  (let [test-fk (:place_fk @params)
-        place_fk (if (not (empty? test-fk))
-                   test-fk
-                   (:place_pk @params))
+  (let [place_fk (:place_pk @params)
         working-params (assoc @params :place_fk place_fk)]
         (sql-save-photo db working-params)
         (save-photo-person)))
@@ -180,16 +210,43 @@
 (defn clear_continue []
   (swap! params #(dissoc % :continue)))
 
+(comment
+(def web-params
+  (let [photo_pk (if (number? (pk-helper (:photo_pk @params))) (:photo_pk @params) (:photo_pk (sql-firstnon db)))
+      photo-map (sql-select-photo db {:photo_pk photo_pk})
+      person-seq (person-checkbox-helper photo_pk)
+      pic_root_path (:pic_root_path (config-data))
+      all-place (place-checkbox-helper photo_pk (:place_fk photo-map))]
+  (merge {:d_state "s_start_page"
+          :userid (:userid @params)
+          :pic_root_path pic_root_path
+          :place_list all-place}
+         (dissoc @params :s_want_place)
+         photo-map
+         (sql-records-found db))))
+  )
+
 ;; Make sure we have a full photo record. Use the first non-updated record as a default
 (defn draw-start-page []
-  (let [photo-map (if (number? (pk-helper (:photo_pk @params))) (sql-select-photo db @params) (sql-firstnon db))
+  (addmsg "draw-start-page")
+  (let [page_name "html/start_page.html"
+        photo_pk (if (number? (pk-helper (:photo_pk @params))) (:photo_pk @params) (:photo_pk (sql-firstnon db)))
+        photo-map (sql-select-photo db {:photo_pk photo_pk})
+        person-seq (person-checkbox-helper photo_pk)
         pic_root_path (:pic_root_path (config-data))
-        web-params (merge {:d_state "s_start_page" :pic_root_path pic_root_path}
-                          (dissoc @params :s_choose_place)
+        all-place (place-checkbox-helper photo_pk (:place_fk photo-map))
+        web-params (merge {;; :d_state "s_start_page"
+                           :curr_page_state "s_start_page"
+                           :page_name page_name
+                           :userid (:userid @params)
+                           :pic_root_path pic_root_path
+                           :place_list all-place
+                           :person_display (sql-select-photo-person db {:photo_fk photo_pk})}
+                          (dissoc @params :s_want_place)
                           photo-map
                           (sql-records-found db))
         html-result (my-render
-                     (slurp "html/start_page.html")
+                     (slurp page_name)
                      web-params)]
     (reset! html-out html-result)))
 
@@ -230,40 +287,15 @@
         page_name "html/person_page.html"
         html-result (my-render
                      (slurp page_name)
-                     {:d_state "s_person_page"
+                     {;; :d_state "s_person_page"
+                      :curr_page_state "s_show_person"
+                      :userid (:userid @params)
                       :choose_person choose-person-bool
                       :photo_pk (:photo_pk @params)
                       :page_name page_name
                       :person_list person-seq})]
     (reset! html-out html-result)))
 
-;; :place_pk from the database is a number.
-;; :place_fk from the html is a string.
-;; Convert the db value wih (str) before comparing. 
-(defn place-checkbox-helper
-  "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
-  ([photo_pk]
-   (place-checkbox-helper photo_pk (:place_fk @params)))
-  ([photo_pk place_fk]
-   (let [ap (sql-select-all-place db)]
-     (map (fn [xx] (if (= (str (:place_pk xx)) (str place_fk)) (assoc xx :checked "checked") xx)) ap))))
-
-;; We can come here from start page or photo page, so we might have place_pk or place_fk.
-(defn draw-place-page []
-  (let [chose_place (if (not-empty (:s_choose_place @params)) {:choose_place true} nil)
-        d_state "s_place_page"
-        place-seq (place-checkbox-helper (:photo_pk @params));; (sql-select-all-place db)
-        page_name "html/place_page.html"
-        web-params (merge
-                    chose_place
-                    {:d_state d_state
-                     :s_choose_place (:s_choose_place @params)
-                     :photo_pk (:photo_pk @params)
-                     :place_pk (or (:place_fk @params) (:place_pk @params))
-                     :page_name page_name
-                     :place_list place-seq})
-        html-result (my-render (slurp page_name) web-params)]
-    (reset! html-out html-result)))
 
 ;; 2026-03-22 Modified machine.util/traverse to support *not* traversing when the state-fn returns explicit false.
 ;; Unclear if this will break anything. Only stopping on false means legacy functions that return nil are still ok.
@@ -274,28 +306,79 @@
 (defn have-place-pk? []
   (contains? @params :place_pk))
 
+(empty? "1")
+
+(defn logged-in? []
+  (printf "logged-in?\n")
+  (clrmsg)
+  (if (not (empty?  (:userid @params)))
+    true
+    false))
+
+(defn nil_person_pk? []
+  (if (not (empty?  (:person_pk @params)))
+    false
+    true))
+
+(defn draw-login []
+  (let [page_name "html/login.html"
+        html-result (my-render (slurp page_name) {:d_state "s_check_auth"})]
+    (reset! html-out html-result)))
+
+(defn logout []
+  (set-params (dissoc @params :userid))
+  true)
+
+;; We can come here from start page or photo page, so we might have place_pk or place_fk.
+(defn draw-place-page []
+  (addmsg "draw-place-page\n")
+  (let [want_place (if (not-empty (:s_want_place @params)) {:want_place_val "s_want_place" :want_place_bool true} nil)
+        ;; d_state "s_place_page"
+        place-seq (place-checkbox-helper (:photo_pk @params));; (sql-select-all-place db)
+        page_name "html/place_page.html"
+        web-params (merge
+                    want_place
+                    {:curr_page_state "s_place_page"
+                     :userid (:userid @params)
+                     :photo_pk (:photo_pk @params)
+                     :place_pk (or (:place_fk @params) (:place_pk @params))
+                     :page_name page_name
+                     :place_list place-seq})
+        html-result (my-render (slurp page_name) web-params)]
+    (reset! html-out html-result)))
+
 (defn draw-edit-place []
-  (let [d_state "s_edit_place"
+  (addmsg "draw-edit-place\n")
+  (let [want_place (if (not-empty (:s_want_place @params)) {:want_place_val "s_want_place" :want_place_bool true} nil)
+        ;; d_state "s_edit_place"
         page_name "html/new_place.html"
         place-seq (sql-select-place db @params)
         html-result (my-render
                      (slurp page_name)
                      (merge
-                      {:d_state d_state
+                      want_place
+                      {;; :d_state d_state
+                       :curr_page_state "s_edit_place"
+                       :userid (:userid @params)
                        :photo_pk (:photo_pk @params)
                        :page_name page_name}
                       place-seq))]
     (reset! html-out html-result)))
 
 (defn draw-new-place []
-  (let [d_state "s_new_place"
+  (addmsg "draw-new-place\n")
+  (let [want_place (if (not-empty (:s_want_place @params)) {:want_place_val  "s_want_place" :want_place_bool true} nil)
+        ;; d_state "s_new_place"
         page_name "html/new_place.html"
         html-result (my-render
                      (slurp page_name)
                      (merge
-                      {:d_state d_state
+                      want_place
+                      {;; :d_state d_state
+                       :curr_page_state "s_new_place"
+                       :userid (:userid @params)
                        :photo_pk (:photo_pk @params)
-                       :s_choose_place (:s_choose_place @params)
+                       :s_want_place (:s_want_place @params)
                        :page_name page_name}))]
     (reset! html-out html-result)))
 
@@ -304,10 +387,6 @@
 
 (defn update-place []
   (sql-update-place db @params))
-
-;; Can't clear state by doing this:
-;;     (set-params (dissoc @params :s_choose_place)) ;; Need to clear this now that we're done.
-;; The "state" is being held internally inside machine.util/traverse.
 
 (defn save-place-choice []
   (let [working-params {:photo_pk (:photo_pk @params) :place_fk (:place_pk @params)}]
@@ -328,20 +407,24 @@
                     tpk)
         html-result (my-render
                      (slurp page_name)
-                     (merge {:d_state "s_edit_person"
+                     (merge {;; :d_state "s_edit_person"
+                             :curr_page_state "s_edit_person"
+                             :userid (:userid @params)
                              :page_name page_name
                              :photo_pk (:photo_pk @params)
                              :related (sql-related-person db {:related_pk single-pk})}
                             (sql-select-person db {:person_pk single-pk})))]
     (reset! html-out html-result)))
 
+;; Might be merged with edit-person, sending nil person_pk
 (defn draw-new-person
-  ;; Might be merged with edit-person, sending nil person_pk
   []
   (let [page_name "html/new_person.html"
         html-result (my-render
                      (slurp page_name)
-                     {:d_state "s_new_person"
+                     {;; :d_state "s_new_person"
+                      :curr_page_state "s_new_person"
+                      :userid (:userid @params)
                       :photo_pk (:photo_pk @params)
                       :page_name page_name})]
     (reset! html-out html-result)))
@@ -397,7 +480,7 @@
 ;; (declare draw-start-page)
 
 ;; Change the return value to be your default starting state. Was :test_conf
-(defn default-state [] :s_start_page)
+(defn default-state [] :s_check_auth)
 
 ;; 2026-03-18 check boolean state function and do things depending on true/false, like don't change to new state?
 ;; Combine that with explicit exit or error cases?
@@ -409,53 +492,76 @@
 ;; nil is ok as a fn-symbol
 ;; Don't confuse or conflate d_state with the current state.
 (def table
-  {:s_start_page
-   [ ;; [:s_populate_db populate-db-wrapper nil]
+  {:s_check_auth
+   [[logged-in? nil :do_dispatch]
+    [:true draw-login nil]]
+   :do_dispatch
+   [[:true #(addmsg "hit disp\n") nil]
+    [:s_start_page nil :do_start_page]
+    [:s_edit_person nil :do_edit_person]
+    [:s_show_person #(addmsg "hit show_person\n") :do_person_page]
+    [:s_new_person nil :s_new_person]
+    [:s_photo_page nil :s_photo_page]
+    [:s_place_page nil :s_place_page] ;; confusion around s_place_page and s_choose_place
+    [:s_want_place nil :s_choose_place] ;; s_want_place state test vs s_choose_place dispatch
+    [:s_edit_place #(addmsg "hit ep\n") :s_edit_place]
+    [:s_new_place nil :s_new_place]
+    [logged-in? draw-start-page :exit]
+    [:true nil nil]
+    [:true draw-login nil]]
+
+   :do_start_page
+   [[:true #(addmsg "do_start_page") nil]
     [:s_jump jump-to nil]
     [:s_edit nil :s_photo_page]
     [:s_edit_nn edit-nn :s_photo_page]
     [:s_new_person nil :s_new_person]
     [:s_new_place nil :s_new_place]
     [:s_places nil :s_place_page]
-    [:s_show_person nil :s_person_page]
+    [:clicked_person nil :do_person_page]
     [:s_previous previous-photo nil]
     [:s_next next-photo nil]
-    [:true draw-start-page nil]]
+    [:true draw-start-page :exit]]
 
-   :s_edit_person
-   [[:s_save update-person nil]
+   :do_edit_person
+   [[nil_person_pk? draw-person-page :exit]
+    [:s_save update-person nil]
     [:s_save draw-person-page :exit]
     [:s_cancel draw-person-page :exit]
     [:true draw-edit-person nil]]
-   :s_person_page
+
+   :do_person_page
    [[:s_new nil :s_new_person]
-    [:s_cancel nil :s_start_page]
-    [:s_edit nil :s_edit_person]
+    [:s_cancel #(addmsg "person/cancel") :do_start_page]
+    [:s_edit nil :do_edit_person]
     [:s_save_choice save-photo-person :s_photo_page]
     [:s_edit_photo draw-photo-page :exit]
     [:true draw-person-page nil]]
+
    :s_new_person
-   [[:s_save save-person :s_person_page]
-    [:s_cancel nil :s_person_page]
+   [[:s_save save-person :do_person_page]
+    [:s_cancel nil :do_person_page]
     [:true draw-new-person nil]]
 
    :s_photo_page
-   [[:s_cancel nil :s_start_page]
-    [:s_choose_person save-photo :s_person_page]
+   [[:s_cancel nil :do_start_page]
+    [:s_choose_person save-photo :do_person_page]
     [:s_previous save-photo nil]
     [:s_previous previous-photo nil]
     [:s_next save-photo nil]
     [:s_next next-photo nil]
+    [:s_next draw-photo-page :exit]
     [:s_save save-photo nil]
-    [:s_choose_place save-photo :s_choose_place]
-    [:true draw-photo-page nil]]
+    [:s_want_place save-photo :s_choose_place]
+    [:true draw-photo-page :exit]]
 
    :s_choose_place
    [[:s_cancel nil nil]
     [:true draw-place-page nil]]
 
    :s_edit_place
-   [[:s_save update-place nil]
+   [[:true #(addmsg "s_edit_place\n") nil]
+    [:s_save update-place nil]
     [:s_save draw-place-page :exit]
     [:s_cancel draw-place-page :exit]
     [have-place-pk? draw-edit-place :exit]
@@ -465,7 +571,7 @@
    [[:s_save_choice save-place-choice nil]
     [:s_save_choice draw-photo-page :exit]
     [:s_new nil :s_new_place]
-    [:s_cancel nil :s_start_page]
+    [:s_cancel nil :do_start_page]
     [:s_edit nil :s_edit_place]
     [:s_edit_photo draw-photo-page :exit]
     [:true draw-place-page nil]]

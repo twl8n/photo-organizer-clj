@@ -12,24 +12,23 @@
             [clojure.java.shell :as shell])
   (:gen-class))
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-(def true-ns (ns-name *ns*))
+;; (def true-ns (ns-name *ns*))
+
+;; or 8080 or 8081 ports 27161 thru 27169 are directtv and might be open on most home routers.
+(def rport 8081) 
 
 ;; 2025-04-11 migrate read-config to sqlite using default db path and name.
-
 ;; This would be simpler (?), more secure, more reliable if it only accepted certain keys.
-;; export-path
-;; db-path
 (defn read-config
   "Read .cmgr in the user's home dir. Strip comments and blank lines."
   []
   {:db-path (str (System/getenv "HOME") "/porg.db")})
 
-
 ;; A CGI param from multiple checkboxes will be a vector of strings.
-;; A CGI param from single checkbox or inputs are string.
+;; A CGI param from input or single checkbox is a string.
 ;; This is a helper function to deal with it this aspect of CGI params.
 (defn trim-vec-or-string
-  "If vector, trim the string in the vector. If just a string, trim the string"
+  "Trim trailing whitespace from CGI params. If vector, trim the strings in the vector. If just a string, trim the string"
   [orig]
   (if (instance? clojure.lang.PersistentVector orig)
     (map #(clojure.string/trim %) orig)
@@ -48,10 +47,12 @@
     (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]
       ;; (print (format "uri: %s\n" (:uri request))) (flush)
       err-return)
-    (let [temp-params (as-> request yy
+    (let [d_state (porg.state/default-state) ;; (or (keyword (:d_state yy)) (porg.state/default-state))
+          temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
-                        (assoc yy :d_state (or (keyword (:d_state yy)) (porg.state/default-state))))]
+                        (assoc yy :d_state d_state))]
+      ;; (pp/pprint temp-params)
       (porg.state/set-params temp-params)
       (machine.util/reset-state)
       (machine.util/reset-history)
@@ -118,7 +119,9 @@
 ;; create a symbolic link: ln -s /Volumes/external/my-family/ image
 ;; call the middleware: (wrap-file "image")
 ;; the working url is: http://localhost:8081/2023-08-29/DSC_0001.JPG
+;; or the port might be 27161.
 
+;; ipv6 supported out of the box. No changes were necessary.
 (defn make-app [& args]
   (-> handler
       (local-wrap-ignore-favicon)
@@ -127,32 +130,32 @@
       (wrap-params)))
 
 ;; Unclear how defonce and lein ring server headless will play together.
-;; Use port 8081 since my content manager uses port 8080. Unlikely both will be running at the same time, but...
 (defn ds []
-  (defonce server (ringa/run-jetty (make-app) {:port 8081 :join? false})))
+  (defonce server (ringa/run-jetty (make-app) {:port rport :join? false})))
 
 (comment
   (shell/sh "open"
-            "http://localhost:8081/porg")
+            (format "http://localhost:%s/porg" rport))
   (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
             "--private-window"
-            "http://localhost:8081/porg")
-  (shell/sh "open" "--args" "--private-window" "-u" "http://localhost:8081/porg")
+            (format "http://localhost:%s/porg" rport))
+  (shell/sh "open" "--args" "--private-window" "-u" (format "http://localhost:%s/porg" rport))
+  ;; 27161 or 8081
   ;; open -a /bin/sh --args "-c" "/Applications/Firefox.app/Contents/MacOS/firefox -private-window http://localhost:8081/porg"
   )
 (defn -main
   "Parse the states.dat file."
   [& args]
   ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-  (in-ns true-ns)
+  ;; (in-ns true-ns)
   (porg.state/set-config (read-config))
   (print (format "%s\n" @porg.state/config))
   (print (state/test-config-data))
+  (printf "Remember that @porg.core/xrequest has the entire http request.\n")
   (ds)
   (prn "server: " server)
   (.start server)
   (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
             "--private-window"
-            "http://localhost:8081/porg"))
-
+            (format "http://localhost:%s/porg" rport)))
 
