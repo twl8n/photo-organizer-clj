@@ -26,6 +26,19 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
+- Need to get rid of any http request specific atoms. They persist and would leak info between requests. This includes:
+
+porg.core/xrequest
+  machine.util/app-state
+  machine.util/history
+  porg.state/sysmsg
+  porg.state/html-out
+  porg.state/params
+
+User-specific, persistent data can go into the db. Ephemeral request data should be local vars.
+
+- P Add state data var, base64 encode and put in html for use on the next request.
+
 - P want_place not carried through new. Maybe not edit?
 
 - P State table needs explicit page name and (page? "foo") test for the dispatch. Fix long-standing confusion
@@ -33,6 +46,8 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
   (button? "s_cancel"). Clarify page-state and button-state.
 
 - P Finish userid and auth token for login. Start using the user db table.
+
+- X Upgrade
 
 - Need a "notes" field for table place.
 

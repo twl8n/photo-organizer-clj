@@ -118,7 +118,7 @@
 (defn place-checkbox-helper
   "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
   ([photo_pk]
-   (place-checkbox-helper photo_pk (:place_fk @params)))
+   (place-checkbox-helper photo_pk (or (:place_pk @params) (:place_fk @params))))
   ([photo_pk place_fk]
    (let [ap (sql-select-all-place db)]
      (map (fn [xx] (if (= (str (:place_pk xx)) (str place_fk)) (assoc xx :checked "checked") xx)) ap))))
@@ -134,8 +134,7 @@
         all-place (place-checkbox-helper photo_pk (:place_fk photo-rec))
         html-result (my-render
                      (slurp page_name)
-                     (merge {;; :d_state "s_photo_page"
-                             :curr_page_state "s_photo_page"
+                     (merge {:curr_page_state "s_photo_page"
                              :userid (:userid @params)
                              :photo_pk photo_pk
                              :page_name page_name
@@ -187,7 +186,6 @@
 
 (defn test_config []
   (let [ready-data {:vals (test-config-data) 
-                    :d_state (:d_state @params) 
                     :s_one (:s_one @params) 
                     :s_two (:s_two @params)
                     :whichfn "test_config"}
@@ -196,7 +194,6 @@
 
 (defn alt []
   (let [ready-data {:vals (test-config-data) 
-                    :d_state (:d_state @params) 
                     :s_one (:s_one @params)
                     :s_two (:s_two @params)
                     :whichfn "alt"}
@@ -217,8 +214,7 @@
       person-seq (person-checkbox-helper photo_pk)
       pic_root_path (:pic_root_path (config-data))
       all-place (place-checkbox-helper photo_pk (:place_fk photo-map))]
-  (merge {:d_state "s_start_page"
-          :userid (:userid @params)
+  (merge {:userid (:userid @params)
           :pic_root_path pic_root_path
           :place_list all-place}
          (dissoc @params :s_want_place)
@@ -235,8 +231,7 @@
         person-seq (person-checkbox-helper photo_pk)
         pic_root_path (:pic_root_path (config-data))
         all-place (place-checkbox-helper photo_pk (:place_fk photo-map))
-        web-params (merge {;; :d_state "s_start_page"
-                           :curr_page_state "s_start_page"
+        web-params (merge {:curr_page_state "s_start_page"
                            :page_name page_name
                            :userid (:userid @params)
                            :pic_root_path pic_root_path
@@ -281,14 +276,14 @@
 (defn noop [] true)
 
 (defn draw-person-page []
-  (let [choose-person-bool (if (:s_choose_person @params) true false)
+  (let [choose-person-bool (if (or (:s_choose_person @params)
+                                   (:choose_button @params))true false)
         person-seq (person-checkbox-helper (:photo_pk @params))
         old-person-seq (sql-select-all-person db)
         page_name "html/person_page.html"
         html-result (my-render
                      (slurp page_name)
-                     {;; :d_state "s_person_page"
-                      :curr_page_state "s_show_person"
+                     {:curr_page_state "s_show_person"
                       :userid (:userid @params)
                       :choose_person choose-person-bool
                       :photo_pk (:photo_pk @params)
@@ -322,7 +317,7 @@
 
 (defn draw-login []
   (let [page_name "html/login.html"
-        html-result (my-render (slurp page_name) {:d_state "s_check_auth"})]
+        html-result (my-render (slurp page_name) {:do_check_auth 1})]
     (reset! html-out html-result)))
 
 (defn logout []
@@ -332,16 +327,18 @@
 ;; We can come here from start page or photo page, so we might have place_pk or place_fk.
 (defn draw-place-page []
   (addmsg "draw-place-page\n")
-  (let [want_place (if (not-empty (:s_want_place @params)) {:want_place_val "s_want_place" :want_place_bool true} nil)
-        ;; d_state "s_place_page"
-        place-seq (place-checkbox-helper (:photo_pk @params));; (sql-select-all-place db)
+  (let [want_place (if (or (not-empty (:s_want_place @params)) (:place_button @params))
+                     {:want_place_val "s_want_place" :want_place_bool true}
+                     nil)
+        place_pk (or (:place_pk @params) (:place_fk @params))
+        place-seq (place-checkbox-helper (:photo_pk @params) place_pk);; (sql-select-all-place db)
         page_name "html/place_page.html"
         web-params (merge
                     want_place
                     {:curr_page_state "s_place_page"
                      :userid (:userid @params)
                      :photo_pk (:photo_pk @params)
-                     :place_pk (or (:place_fk @params) (:place_pk @params))
+                     :place_pk place_pk
                      :page_name page_name
                      :place_list place-seq})
         html-result (my-render (slurp page_name) web-params)]
@@ -349,16 +346,16 @@
 
 (defn draw-edit-place []
   (addmsg "draw-edit-place\n")
-  (let [want_place (if (not-empty (:s_want_place @params)) {:want_place_val "s_want_place" :want_place_bool true} nil)
-        ;; d_state "s_edit_place"
+  (let [want_place (if (not-empty (:s_want_place @params))
+                     {:want_place_val "place_button" :want_place_bool true}
+                     nil)
         page_name "html/new_place.html"
         place-seq (sql-select-place db @params)
         html-result (my-render
                      (slurp page_name)
                      (merge
                       want_place
-                      {;; :d_state d_state
-                       :curr_page_state "s_edit_place"
+                      {:curr_page_state "s_edit_place"
                        :userid (:userid @params)
                        :photo_pk (:photo_pk @params)
                        :page_name page_name}
@@ -367,15 +364,15 @@
 
 (defn draw-new-place []
   (addmsg "draw-new-place\n")
-  (let [want_place (if (not-empty (:s_want_place @params)) {:want_place_val  "s_want_place" :want_place_bool true} nil)
-        ;; d_state "s_new_place"
+  (let [want_place (if (not-empty (:s_want_place @params))
+                     {:want_place_val  "place_button" :want_place_bool true}
+                     nil)
         page_name "html/new_place.html"
         html-result (my-render
                      (slurp page_name)
                      (merge
                       want_place
-                      {;; :d_state d_state
-                       :curr_page_state "s_new_place"
+                      {:curr_page_state "s_new_place"
                        :userid (:userid @params)
                        :photo_pk (:photo_pk @params)
                        :s_want_place (:s_want_place @params)
@@ -401,14 +398,16 @@
   ;; Might be merged with new-person, not getting any record from the db.
   []
   (let [page_name "html/new_person.html"
+        choose-person-bool (if (or (:s_choose_person @params)
+                                   (:choose_button @params))true false)
         tpk (:person_pk @params)
         single-pk (if (seq? tpk)
                     (first tpk)
                     tpk)
         html-result (my-render
                      (slurp page_name)
-                     (merge {;; :d_state "s_edit_person"
-                             :curr_page_state "s_edit_person"
+                     (merge {:curr_page_state "s_edit_person"
+                             :choose_person choose-person-bool
                              :userid (:userid @params)
                              :page_name page_name
                              :photo_pk (:photo_pk @params)
@@ -420,10 +419,12 @@
 (defn draw-new-person
   []
   (let [page_name "html/new_person.html"
+        choose-person-bool (if (or (:s_choose_person @params)
+                                   (:choose_button @params))true false)
         html-result (my-render
                      (slurp page_name)
-                     {;; :d_state "s_new_person"
-                      :curr_page_state "s_new_person"
+                     {:curr_page_state "s_new_person"
+                      :choose_person choose-person-bool
                       :userid (:userid @params)
                       :photo_pk (:photo_pk @params)
                       :page_name page_name})]
@@ -434,10 +435,6 @@
 
 (defn update-person []
   (sql-update-person db @params))
-
-;; There should be a formal way to use a param to change the state.
-(defn back-state []
-  (set-params (assoc @params :d_state (:prev_state @params))))
 
 (defn edit-nn
   "If we have valid user entered photo pk use it else use the normal photo pk from params"
@@ -480,7 +477,7 @@
 ;; (declare draw-start-page)
 
 ;; Change the return value to be your default starting state. Was :test_conf
-(defn default-state [] :s_check_auth)
+(defn default-state [] :do_check_auth)
 
 ;; 2026-03-18 check boolean state function and do things depending on true/false, like don't change to new state?
 ;; Combine that with explicit exit or error cases?
@@ -488,24 +485,25 @@
 ;; 2026-03-22 state-fn (the middle value) is tested for returning false. If false, will not transition to the third value.
 ;; This behaviour preserves legacy function, but allows us to explicitly return false.
 
-;; next state must be a keyword, probably also needs to exist in the table.
-;; nil is ok as a fn-symbol
-;; Don't confuse or conflate d_state with the current state.
+;; next :do_* must be a keyword, probably also needs to exist in the table.
+;; nil is ok as a fn-symbol. 
+
 (def table
-  {:s_check_auth
+  {:do_check_auth
    [[logged-in? nil :do_dispatch]
     [:true draw-login nil]]
+
    :do_dispatch
    [[:true #(addmsg "hit disp\n") nil]
     [:s_start_page nil :do_start_page]
     [:s_edit_person nil :do_edit_person]
     [:s_show_person #(addmsg "hit show_person\n") :do_person_page]
-    [:s_new_person nil :s_new_person]
-    [:s_photo_page nil :s_photo_page]
-    [:s_place_page nil :s_place_page] ;; confusion around s_place_page and s_choose_place
-    [:s_want_place nil :s_choose_place] ;; s_want_place state test vs s_choose_place dispatch
-    [:s_edit_place #(addmsg "hit ep\n") :s_edit_place]
-    [:s_new_place nil :s_new_place]
+    [:s_new_person nil :do_new_person]
+    [:s_photo_page nil :do_photo_page]
+    [:s_place_page nil :do_place_page] ;; confusion around do_place_page and do_choose_place
+    [:s_want_place nil :do_choose_place] ;; s_want_place state test vs do_choose_place dispatch
+    [:s_edit_place #(addmsg "hit ep\n") :do_edit_place]
+    [:s_new_place nil :do_new_place]
     [logged-in? draw-start-page :exit]
     [:true nil nil]
     [:true draw-login nil]]
@@ -513,11 +511,11 @@
    :do_start_page
    [[:true #(addmsg "do_start_page") nil]
     [:s_jump jump-to nil]
-    [:s_edit nil :s_photo_page]
-    [:s_edit_nn edit-nn :s_photo_page]
-    [:s_new_person nil :s_new_person]
-    [:s_new_place nil :s_new_place]
-    [:s_places nil :s_place_page]
+    [:s_edit nil :do_photo_page]
+    [:s_edit_nn edit-nn :do_photo_page]
+    [:s_new_person nil :do_new_person]
+    [:s_new_place nil :do_new_place]
+    [:s_places nil :do_place_page]
     [:clicked_person nil :do_person_page]
     [:s_previous previous-photo nil]
     [:s_next next-photo nil]
@@ -531,19 +529,19 @@
     [:true draw-edit-person nil]]
 
    :do_person_page
-   [[:s_new nil :s_new_person]
+   [[:s_new nil :do_new_person]
     [:s_cancel #(addmsg "person/cancel") :do_start_page]
     [:s_edit nil :do_edit_person]
-    [:s_save_choice save-photo-person :s_photo_page]
+    [:s_save_choice save-photo-person :do_photo_page] ;; s_photo_person?
     [:s_edit_photo draw-photo-page :exit]
     [:true draw-person-page nil]]
 
-   :s_new_person
+   :do_new_person
    [[:s_save save-person :do_person_page]
     [:s_cancel nil :do_person_page]
     [:true draw-new-person nil]]
 
-   :s_photo_page
+   :do_photo_page
    [[:s_cancel nil :do_start_page]
     [:s_choose_person save-photo :do_person_page]
     [:s_previous save-photo nil]
@@ -552,32 +550,33 @@
     [:s_next next-photo nil]
     [:s_next draw-photo-page :exit]
     [:s_save save-photo nil]
-    [:s_want_place save-photo :s_choose_place]
+    [:s_want_place save-photo :do_choose_place]
     [:true draw-photo-page :exit]]
 
-   :s_choose_place
+   :do_choose_place
    [[:s_cancel nil nil]
     [:true draw-place-page nil]]
 
-   :s_edit_place
-   [[:true #(addmsg "s_edit_place\n") nil]
+   :do_edit_place
+   [[:true #(addmsg "do_edit_place\n") nil]
     [:s_save update-place nil]
     [:s_save draw-place-page :exit]
     [:s_cancel draw-place-page :exit]
     [have-place-pk? draw-edit-place :exit]
     [:true draw-place-page nil]]
 
-   :s_place_page
+   :do_place_page
    [[:s_save_choice save-place-choice nil]
     [:s_save_choice draw-photo-page :exit]
-    [:s_new nil :s_new_place]
+    [:s_new nil :do_new_place]
     [:s_cancel nil :do_start_page]
-    [:s_edit nil :s_edit_place]
+    [:s_edit nil :do_edit_place]
     [:s_edit_photo draw-photo-page :exit]
     [:true draw-place-page nil]]
-   :s_new_place
-   [[:s_save save-place :s_place_page]
-    [:s_cancel nil :s_place_page]
+
+   :do_new_place
+   [[:s_save save-place :do_place_page]
+    [:s_cancel nil :do_place_page]
     [:true draw-new-place nil]]
 
    :test_config

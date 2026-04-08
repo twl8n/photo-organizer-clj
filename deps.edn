@@ -5,12 +5,25 @@
   org.clojure/clojure {:mvn/version "1.10.2"}
   org.xerial/sqlite-jdbc {:mvn/version "3.21.0"}
   com.layerware/hugsql {:mvn/version "0.4.8"}
-  de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
+
+  ;; 2026-04-07 Fixed "WARNING: seqable? already refers to ..."
+  ;; fef301eb2cdc4c337f3240975d378d79f6f2b92a
+  ;; https://github.com/HealthSamurai/clostache
+  ;; project.clj says: (defproject de.ubercode.clostache/clostache "1.5.0" ...
+  github-HealthSamurai/clostache {:git/url "https://github.com/HealthSamurai/clostache"
+                                  :sha "fef301eb2cdc4c337f3240975d378d79f6f2b92a"}
+
+  ;; The original clostache, apparently will not fix.
+  ;; de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
+
   org.clojure/java.jdbc {:mvn/version "0.7.5"}
   ring/ring {:mvn/version "1.8.2"}
   machine/machine {:local/root "../machine"}
   ;; github-twl8n/machine {:git/url "https://github.com/twl8n/machine"
   ;;                       :sha "fabdf3f8329cc8e25217bcee4a460b1fe8fb04c0"}
+
+  ;; For base64 encoding
+  org.clojure/data.codec {:mvn/version "0.2.1"}
 
   ;; used for the encrypt decrypt demo
   buddy/buddy-core {:mvn/version "1.10.0"}
