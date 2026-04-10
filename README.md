@@ -26,16 +26,25 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
-- Need to get rid of any http request specific atoms. They persist and would leak info between requests. This includes:
+- P Add phdata to all pages and draw-* functions. Try to move management of phdata up to porg.core?
 
-porg.core/xrequest
+- Test person > new > cancel. I think it fails to render a web page.
+
+- When multiple people checked, Person > Edit should give a message that only one person can be edited. 
+
+- P Need to get rid of any http request specific atoms. They persist and would leak info between requests. This includes:
+
+  porg.core/xrequest
   machine.util/app-state
   machine.util/history
   porg.state/sysmsg
-  porg.state/html-out
   porg.state/params
 
-User-specific, persistent data can go into the db. Ephemeral request data should be local vars.
+User-specific, session-specific, persistent data can go into the db. Ephemeral request data should be local vars.
+
+- X create html-out atom in handler's let binding, pass it in :hmtl-out in the params, update
+  porg.state/html-out to use the supplied html-out atom. Convert params to also use an atom in the handler let
+  binding.
 
 - P Add state data var, base64 encode and put in html for use on the next request.
 

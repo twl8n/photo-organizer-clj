@@ -41,6 +41,7 @@
     <div class="wrapper">
       <div class="pane1">
         <form action="./porg" method="post">
+          <input name="phdata" value="{{phdata}}" type="hidden">
           <input name="do_check_auth" value="1" type="hidden">
           <div style="text-align: left;">
             Userid <input name="userid" value="" type="text">
@@ -49,6 +50,8 @@
         </form>
     </div>
     Template: login.html 
+    <br>
+    <pre>{{debug}}</pre>
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

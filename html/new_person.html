@@ -10,6 +10,7 @@
           <td bgcolor="#99cccc" valign="top">
             <div align="center">
               <form action="./porg" method="post">
+                <input name="phdata" value="{{phdata}}" type="hidden">
                 <input name="{{curr_page_state}}" value="1" type="hidden">
                 {{#choose_person}}
                 <input name="choose_button" value="1" type="hidden">
@@ -44,6 +45,8 @@
     <br>
     <br>
     Template: {{page_name}} curr_page_state: {{curr_page_state}} userid: {{userid}}
+    <br>
+    <pre>{{debug}}</pre>
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

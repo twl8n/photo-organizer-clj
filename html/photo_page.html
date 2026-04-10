@@ -49,6 +49,7 @@
     <form action="./porg" method="post">
       <div class="wrapper">
         <div class="pane1">
+          <input name="phdata" value="{{phdata}}" type="hidden">          
           <input name="userid" value="{{userid}}" type="hidden">
           <input name="{{curr_page_state}}" value="1" type="hidden">
           <input name="photo_pk" value="{{photo_pk}}" type="hidden">
@@ -95,6 +96,8 @@
       </div>
     </form>
     Template: {{page_name}} curr_page_state: {{curr_page_state}}
+    <br>
+    <pre>{{debug}}</pre>
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

@@ -11,6 +11,7 @@
             <div align="center">
               <form action="./porg" method="post">
                 <input name="{{curr_page_state}}" value="1" type="hidden">
+                <input name="phdata" value="{{phdata}}" type="hidden">
                 <input name="userid" value="{{userid}}" type="hidden">
                 <input name="page_name" value="{{page_name}}" type="hidden">
                 <input name="prev_state" value="{{pre_state}}" type="hidden">
@@ -44,6 +45,8 @@
     <br>
     <br>
     Template: {{page_name}} curr_page_state: {{curr_page_state}} userid: {{userid}}
+    <br>
+    <pre>{{debug}}</pre>
     <script>
       document.getElementById("scroll").scrollIntoView();
     </script>

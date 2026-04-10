@@ -1,5 +1,7 @@
 (ns porg.core
   (:require [porg.state :as state]
+            [clojure.data.codec.base64 :as base64]
+            [clojure.edn :as edn]
             [machine.core]
             [machine.util :refer :all]
             [clojure.string :as str]
@@ -14,7 +16,8 @@
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 ;; (def true-ns (ns-name *ns*))
 
-;; or 8080 or 8081 ports 27161 thru 27169 are directtv and might be open on most home routers.
+;; commonly 8080 or 8081
+;; ports 27161 thru 27169 are directtv and might be open on most home routers.
 (def rport 8081) 
 
 ;; 2025-04-11 migrate read-config to sqlite using default db path and name.
@@ -36,6 +39,31 @@
 
 (def xrequest (atom {}))
 
+(comment
+  (defn aafn [foo]
+    (swap! foo #(assoc % :bar 1))
+    (printf "first: %s\n" @foo)
+    (swap! foo #(assoc % :zar 2))
+    (printf "second: %s\n" @foo)
+    @foo)
+  (let [bar (atom {})] (aafn bar))
+  )
+
+(def deb (atom ""))
+
+(comment
+  (def bbb
+    (let [d_state (porg.state/default-state) ;; (or (keyword (:d_state yy)) (porg.state/default-state))
+          html-out (atom "")]
+      (as-> @xrequest yy
+        (:form-params yy) ;; We only support POST requests now.
+        (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
+        (assoc yy :d_state d_state)
+        (assoc yy :html-out html-out))))
+  
+  ;; (assoc yy :xphdata (porg.state/wdecode (:phdata yy)))))
+  )
+
 ;; Be specific that we only do dynamic requests to the /porg endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
 ;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
@@ -48,27 +76,27 @@
       ;; (print (format "uri: %s\n" (:uri request))) (flush)
       err-return)
     (let [d_state (porg.state/default-state) ;; (or (keyword (:d_state yy)) (porg.state/default-state))
+          html-out (atom "")
           temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
-                        (assoc yy :d_state d_state))]
-      ;; (pp/pprint temp-params)
-      (porg.state/set-params temp-params)
-      (machine.util/reset-state)
-      (machine.util/reset-history)
-      (machine.util/set-app-state temp-params)
-
-      ;; Assume that :d_state always has some valid value. I wonder if the state table supports nil as value?
-      ;; (get yy nil) works but (nil yy) does not, so nil is apparently a valid map key.
-      (let [res (machine.util/traverse (:d_state temp-params) porg.state/table machine.util/if-arg)]
-        (when res (prn res)))
+                        (assoc yy :d_state d_state)
+                        (assoc yy :html-out html-out)
+                        (assoc yy :phdata (porg.state/wdecode (:phdata yy)))
+                        (atom yy))]
+      (binding [porg.state/params temp-params]
+        (machine.util/reset-state)
+        (machine.util/reset-history)
+        (machine.util/set-app-state @temp-params)
+        (let [res (machine.util/traverse (:d_state @temp-params) porg.state/table machine.util/if-arg)]
+          (when res (prn res))))
 
       ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
       ;; uri back to what we want, clearing any anchor/id values, and any other cruft.
       ;; NOTE: "./porg" just creates a mess, post-pending "/porg" on the uri. 
       {:status 200
        :headers {"Location" "/porg" "Content-Type" "text/html"}
-       :body @porg.state/html-out})))
+       :body @html-out})))
 
 (comment
   ;; This might not be what we want to fix a uri.
