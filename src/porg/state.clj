@@ -607,6 +607,19 @@
 ;; next :do_* must be a keyword, probably also needs to exist in the table.
 ;; nil is ok as a fn-symbol. 
 
+;; two letter prefix/suffix to make every state test/keyword unique
+;; :do_check_auth	ca
+;; :do_dispatch		di
+;; :do_start_page	sp
+;; :do_edit_person	es perSon
+;; :do_person_page	se perSon
+;; :do_new_person	ns perSon
+;; :do_photo_page	pp
+;; :do_choose_place	cc plaCe
+;; :do_edit_place	ec plaCe
+;; :do_place_page	pc plaCe
+;; :do_new_place	nc plaCe
+
 (def table
   {:do_check_auth
    [[logged-in? nil :do_dispatch]
@@ -616,26 +629,26 @@
    [[:true #(addmsg "hit disp\n") nil]
     [:s_start_page nil :do_start_page]
     [:s_edit_person nil :do_edit_person]
-    [:s_show_person #(addmsg "hit show_person\n") :do_person_page]
+    [:s_show_person nil :do_person_page]
     [:s_new_person nil :do_new_person]
     [:s_photo_page nil :do_photo_page]
     [:s_place_page nil :do_place_page] ;; confusion around do_place_page and do_choose_place
     [:s_want_place nil :do_choose_place] ;; s_want_place state test vs do_choose_place dispatch
-    [:s_edit_place #(addmsg "hit ep\n") :do_edit_place]
+    [:s_edit_place nil  :do_edit_place]
     [:s_new_place nil :do_new_place]
     [logged-in? draw-start-page :exit]
-    [:true nil nil]
     [:true draw-login nil]]
 
    :do_start_page
    [[:true #(addmsg "do_start_page") nil]
     [:s_jump jump-to nil]
-    [:s_edit nil :do_photo_page]
-    [:s_edit_nn edit-nn :do_photo_page]
-    [:s_new_person nil :do_new_person]
-    [:s_new_place nil :do_new_place]
-    [:s_places nil :do_place_page]
-    [:clicked_person nil :do_person_page]
+    [:s_edit draw-photo-page :exit]
+    [:s_edit_nn edit-nn nil]
+    [:s_edit_nn draw-photo-page :exit]
+    [:s_new_person draw-new-person :exit]
+    [:s_new_place draw-new-place :exit]
+    [:s_places draw-place-page :exit]
+    [:clicked_person draw-person-page :exit]
     [:s_previous previous-photo nil]
     [:s_next next-photo nil]
     [:true draw-start-page :exit]]
@@ -650,8 +663,9 @@
    :do_person_page
    [[:s_new nil :do_new_person]
     [:s_cancel draw-start-page :exit]
-    [:s_edit nil :do_edit_person]
-    [:s_save_choice save-photo-person :do_photo_page]
+    [:s_edit draw-edit-person :exit]
+    [:s_save_choice save-photo-person nil]
+    [:s_save_choice draw-photo-page :exit]
     [:s_edit_photo draw-photo-page :exit]
     [:true draw-person-page nil]]
 
@@ -661,15 +675,17 @@
     [:true draw-new-person nil]]
 
    :do_photo_page
-   [[:s_cancel nil :do_start_page]
+   [[:s_cancel draw-start-page :exit]
     [:s_choose_person save-photo :do_person_page]
+    [:s_choose_person draw-person-page :exit]
     [:s_previous save-photo nil]
     [:s_previous previous-photo nil]
     [:s_next save-photo nil]
     [:s_next next-photo nil]
     [:s_next draw-photo-page :exit]
     [:s_save save-photo nil]
-    [:s_want_place save-photo :do_choose_place]
+    [:s_want_place save-photo nil]
+    [:s_want_place draw-place-page :exit]
     [:true draw-photo-page :exit]]
 
    :do_choose_place
@@ -677,8 +693,7 @@
     [:true draw-place-page nil]]
 
    :do_edit_place
-   [[:true #(addmsg "do_edit_place\n") nil]
-    [:s_save update-place nil]
+   [[:s_save update-place nil]
     [:s_save draw-place-page :exit]
     [:s_cancel draw-place-page :exit]
     [have-place-pk? draw-edit-place :exit]
@@ -687,15 +702,16 @@
    :do_place_page
    [[:s_save_choice save-place-choice nil]
     [:s_save_choice draw-photo-page :exit]
-    [:s_new nil :do_new_place]
-    [:s_cancel nil :do_start_page]
-    [:s_edit nil :do_edit_place]
+    [:s_new draw-new-place :exit]
+    [:s_cancel draw-start-page :exit]
+    [:s_edit nil :do_edit_place] ;; change table, handle have-place-pk?
     [:s_edit_photo draw-photo-page :exit]
     [:true draw-place-page nil]]
 
    :do_new_place
-   [[:s_save save-place :do_place_page]
-    [:s_cancel draw-place-page :exit] ;; or cancel might to back to start page
+   [[:s_save save-place nil]
+    [:s_save draw-place-page :exit]
+    [:s_cancel draw-place-page :exit]
     [:true draw-new-place nil]]
 
    :test_config
