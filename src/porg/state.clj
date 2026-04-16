@@ -45,21 +45,6 @@
   [enc-me]
   (String. (base64/encode (.getBytes (prn-str enc-me)))))
 
-(comment
-  "phdata"
-(def bbb  "ImV6cDFjMlZ5YVdRZ0luUjNiQ0lzSURwamRYSnlYM0JoWjJVZ0luTmZjMmh2ZDE5d1pYSnpiMjRpTENBNmNHaHZkRzlmY0dzZ0lqTXlOQ0lzSURwamFHOXZjMlZmY0dWeWMyOXVJR1poYkhObGZRbz0iCg==")
-
-    "phdata"
-  "ImV6cDFjMlZ5YVdRZ0luUjNiQ0lzSURwamRYSnlYM0JoWjJVZ0luTmZjMmh2ZDE5d1pYSnpiMjRpTENBNmNHaHZkRzlmY0dzZ0lqTXlOQ0lzSURwamFHOXZjMlZmY0dWeWMyOXVJR1poYkhObGZRbz0iCg==",
-
-   :phdata
- "ImV6cDFjMlZ5YVdRZ0luUjNiQ0lzSURwamRYSnlYM0JoWjJVZ0luTmZjMmh2ZDE5d1pYSnpiMjRpTENBNmNHaHZkRzlmY0dzZ0lqTXlOQ0lzSURwamFHOXZjMlZmY0dWeWMyOXVJR1poYkhObGZRbz0iCg==",
- :s_show_person "1",
- :xphdata
- "ezp1c2VyaWQgInR3bCIsIDpjdXJyX3BhZ2UgInNfc2hvd19wZXJzb24iLCA6cGhvdG9fcGsgIjMyNCIsIDpjaG9vc2VfcGVyc29uIGZhbHNlfQo=",
-
-  )
-
 (defn wdecode
   "base64 decode and return encoded data"
   [dec-me]
@@ -74,6 +59,7 @@
 (defn msg [arg] (printf "%s\n" arg))
 
 (def ^:dynamic params (atom {}))
+(def ^:dynamic phdata nil)
 
 (defn set-params [xx]
   (reset! params xx))
@@ -139,6 +125,25 @@
   [pk]
   (try (Integer. pk) (catch Exception e nil)))
 
+(if (and (some? {}) nil) true false)
+
+;; Create a truly local phdata. Assume that porg.state/phdata has been bound to another var in porg.core/handler.
+;; Try to update the photo_pk in phdata to be up-to-date.
+(defn phd-fn
+  ([cparams]
+   (phd-fn cparams {}))
+  ([cparams add-map]
+   (let [userid (or (:userid (:userid phdata)) (:userid cparams))
+         new_ppk (:photo_pk @params)
+         phd_ppk (if (number? (pk-helper (:photo_pk phdata))) (:photo_pk phdata) (:photo_pk (sql-firstnon db)))
+         photo_pk (if (and (some? new_ppk) (sql-select-photo db {:photo_pk new_ppk})) new_ppk phd_ppk)
+         phdata (merge {:userid userid
+                        :d_state :do_check_auth
+                        :photo_pk photo_pk}
+                       add-map)
+         phdata-enc (wencode phdata)]
+     (assoc phdata :phdata-enc phdata-enc))))
+
 ;; :place_pk from the database is a number.
 ;; :place_fk from the html is a string.
 ;; Convert the db value wih (str) before comparing. 
@@ -154,12 +159,14 @@
 (defn draw-photo-page []
   (let [pic_root_path (:pic_root_path (config-data))
         page_name "html/photo_page.html"
-        userid (or (:userid (:phdata @params)) (:userid @params))
         curr_page "s_photo_page"
         photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
-        phdata (wencode {:userid userid
-                         :curr_page curr_page
-                         :photo_pk photo_pk})
+        phdata (phd-fn @params {:curr_page curr_page})
+        ;; userid (or (:userid (:phdata @params)) (:userid @params))
+        userid (:userid phdata)
+        ;; phdata (wencode {:userid userid
+        ;;                  :curr_page curr_page
+        ;;                  :photo_pk photo_pk})
         person-seq (person-checkbox-helper photo_pk)
         photo-rec (sql-select-photo db {:photo_pk photo_pk})
         all-place (place-checkbox-helper photo_pk (:place_fk photo-rec))
@@ -173,12 +180,13 @@
                              :place_list all-place
                              :person_display (sql-select-photo-person db {:photo_fk photo_pk})
                              :person_list person-seq
-                             :debug (format "\nraw phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
-                                            (str (wdecode phdata))
+                             :debug (format "\nphoto_pk %s\nnew phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
+                                            photo_pk
+                                            (str phdata)
                                             (str (:phdata @params))
                                             userid
                                             (with-out-str (pp/pprint @params)))
-                             :phdata phdata}
+                             :phdata (:phdata-enc phdata)}
                             photo-rec))]
     (reset! (:html-out @params) html-result)))
 
@@ -206,14 +214,7 @@
     (coll? thing) (some? (seq thing))
     :else false)
   )
-;; (try (empty? (seq thing)) (catch Exception e false)) false
 
-(comment
-  test-fk (:place_fk @params)
-  (if (not (empty? test-fk))
-    test-fk
-    (:place_pk @params))
-  )
 ;; In a photo page context, photo_pk is the param key. Copy it to :place_fk for the SQL.
 (defn save-photo []
   (let [place_fk (:place_pk @params)
@@ -261,30 +262,26 @@
 
 ;; Make sure we have a full photo record. Use the first non-updated record as a default
 (defn draw-start-page []
-  (addmsg "draw-start-page")
   (let [page_name "html/start_page.html"
-        curr_page "s_start_page"
-        userid (or (:userid (:phdata @params)) (:userid @params))
-        photo_pk (if (number? (pk-helper (:photo_pk @params))) (:photo_pk @params) (:photo_pk (sql-firstnon db)))
-        photo-map (sql-select-photo db {:photo_pk photo_pk})
-        person-seq (person-checkbox-helper photo_pk)
         pic_root_path (:pic_root_path (config-data))
+        phdata (phd-fn @params {:curr_page "s_start_page"})
+        photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
+        userid (:userid phdata)
+        photo-map (sql-select-photo db {:photo_pk photo_pk})
         all-place (place-checkbox-helper photo_pk (:place_fk photo-map))
-        phdata (wencode {:userid userid
-                         :curr_page curr_page
-                         :photo_pk photo_pk})
-        web-params (merge {:curr_page_state curr_page
+        person-seq (person-checkbox-helper photo_pk)
+        web-params (merge {:curr_page_state (:curr_page phdata)
                            :page_name page_name
                            :userid userid
                            :pic_root_path pic_root_path
                            :place_list all-place
-                           :debug (format "\nraw phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
-                                          (str (wdecode phdata))
+                           :debug (format "\nnew phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
+                                          (str phdata)
                                           (str (:phdata @params))
                                           userid
                                           (with-out-str (pp/pprint @params)))
                            :person_display (sql-select-photo-person db {:photo_fk photo_pk})
-                           :phdata phdata}
+                           :phdata (:phdata-enc phdata)}
                           (dissoc @params :s_want_place :phdata)
                           photo-map
                           (sql-records-found db))
@@ -294,10 +291,12 @@
     (reset! (:html-out @params) html-result)))
 
 ;; Use and 'or' so that this will work if @params is uninitialized.
+;; Assume that the previous photo_pk is in phdata, not params
 (defn next-photo []
-  (set-params (merge @params
-                     (or (sql-next-photo db {:photo_pk (:photo_pk @params)})
-                         (sql-firstnon db)))))
+  (let [photo_pk (:photo_pk (:phdata @params))]
+    (set-params (merge @params
+                       (or (sql-next-photo db {:photo_pk photo_pk})
+                           (sql-firstnon db))))))
 
 (defn previous-photo
   "select the previous photo and wrap when at min fk. Return the first photo when something goes wrong."
@@ -326,12 +325,15 @@
         old-person-seq (sql-select-all-person db)
         page_name "html/person_page.html"
         curr_page "s_show_person"
-        photo_pk (if (number? (pk-helper (:photo_pk @params))) (:photo_pk @params) (:photo_pk (sql-firstnon db)))
-        userid (or (:userid (:phdata @params)) (:userid @params))
-        phdata (wencode {:userid userid
-                         :curr_page curr_page
-                         :photo_pk photo_pk
-                         :choose_person choose-person-bool})
+        ;; photo_pk (if (number? (pk-helper (:photo_pk @params))) (:photo_pk @params) (:photo_pk (sql-firstnon db)))
+        photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
+        ;; userid (or (:userid (:phdata @params)) (:userid @params))
+        phdata (phd-fn @params {:curr_page "s_start_page" :choose_person choose-person-bool})
+        userid (:userid phdata)
+        ;; phdata (wencode {:userid userid
+        ;;                  :curr_page curr_page
+        ;;                  :photo_pk photo_pk
+        ;;                  :choose_person choose-person-bool})
         html-result (my-render
                      (slurp page_name)
                      {:curr_page_state curr_page
@@ -339,9 +341,9 @@
                       :choose_person choose-person-bool
                       :photo_pk (:photo_pk @params)
                       :page_name page_name
-                      :phdata phdata
+                      :phdata (:phdata-enc phdata)
                       :debug (format "\nraw phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
-                                     (str (wdecode phdata))
+                                     (str phdata)
                                      (str (:phdata @params))
                                      userid
                                      (with-out-str (pp/pprint @params)))
@@ -358,8 +360,9 @@
 (defn have-place-pk? []
   (contains? @params :place_pk))
 
+;; (if (not (empty?  (:userid phdata))) true false )
 (defn logged-in? []
-  (if (not (empty?  (:userid @params)))
+  (if (not (empty? (or (:userid @params) (:userid (:phdata @params)))))
     true
     false))
 
@@ -370,16 +373,15 @@
 
 (defn draw-login []
   (let [page_name "html/login.html"
-        userid (:userid @params)
-        phdata (wencode {:userid userid})
+        phdata (phd-fn @params {:curr_page "s_login_page"})
+        userid (:userid phdata)
         html-result (my-render (slurp page_name)
                                {:do_check_auth 1
                                 :debug (format "\nphdata %s\nold phdata %s\nuserid %s\n"
                                                (str phdata)
                                                (str (:phdata @params))
                                                userid)
-                                :phdata phdata})]
-    ;; (swap! porg.core/deb #(str % "dl " (subs html-result 0 10)))
+                                :phdata (:phdata-enc phdata)})]
     (reset! (:html-out @params) html-result)))
 
 (defn logout []
@@ -397,9 +399,7 @@
         userid (or (:userid (:phdata @params)) (:userid @params))
         curr_page "s_place_page"
         photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
-        phdata (wencode {:userid userid
-                         :curr_page curr_page
-                         :photo_pk photo_pk})
+        phdata (phd-fn @params (merge {:curr_page curr_page} want_place))
         web-params (merge
                     want_place
                     {:curr_page_state curr_page
@@ -408,11 +408,11 @@
                      :place_pk place_pk
                      :page_name page_name
                      :place_list place-seq
-                     :debug (format "\nraw phdata %s\nold phdata %s\nuserid %s\n"
-                                    (str (wdecode phdata))
+                     :debug (format "\nphdata %s\nold phdata %s\nuserid %s\n"
+                                    (str phdata)
                                     (str (:phdata @params))
                                     userid)
-                     :phdata phdata})
+                     :phdata (:phdata-enc phdata)})
         html-result (my-render (slurp page_name) web-params)]
     (reset! (:html-out @params) html-result)))
 
@@ -450,12 +450,14 @@
                      {:want_place_val  "place_button" :want_place_bool true}
                      nil)
         page_name "html/new_place.html"
-        userid (or (:userid (:phdata @params)) (:userid @params))
+        ;;userid (or (:userid (:phdata @params)) (:userid @params))
         curr_page "s_new_place"
         photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
-        phdata (wencode {:userid userid
-                         :curr_page curr_page
-                         :photo_pk photo_pk})
+        phdata (phd-fn @params (merge {:curr_page curr_page} want_place))
+        userid (:userid phdata)
+        ;; phdata (wencode {:userid userid
+        ;;                  :curr_page curr_page
+        ;;                  :photo_pk photo_pk})
         html-result (my-render
                      (slurp page_name)
                      (merge
@@ -466,10 +468,10 @@
                        :s_want_place (:s_want_place @params)
                        :page_name page_name
                        :debug (format "\nraw phdata %s\nold phdata %s\nuserid %s\n"
-                                      (str (wdecode phdata))
+                                      (str phdata)
                                       (str (:phdata @params))
                                       userid)
-                       :phdata phdata}))]
+                       :phdata (:phdata-enc phdata)}))]
     (reset! (:html-out @params) html-result)))
 
 (defn save-place []
@@ -522,14 +524,16 @@
 (defn draw-new-person
   []
   (let [page_name "html/new_person.html"
-        userid (or (:userid (:phdata @params)) (:userid @params))
+        ;; userid (or (:userid (:phdata @params)) (:userid @params))
         curr_page "s_new_person"
         photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
-        phdata (wencode {:userid userid
-                         :curr_page curr_page
-                         :photo_pk photo_pk})
+        ;; phdata (wencode {:userid userid
+        ;;                  :curr_page curr_page
+        ;;                  :photo_pk photo_pk})
         choose-person-bool (if (or (:s_choose_person @params)
                                    (:choose_button @params))true false)
+        phdata (phd-fn @params {:curr_page curr_page :choose_person choose-person-bool})
+        userid (:userid phdata)
         html-result (my-render
                      (slurp page_name)
                      {:curr_page_state curr_page
@@ -538,11 +542,11 @@
                       :photo_pk photo_pk
                       :page_name page_name
                       :debug (format "\nraw phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
-                                     (str (wdecode phdata))
+                                     (str phdata)
                                      (str (:phdata @params))
                                      userid
                                      (with-out-str (pp/pprint @params)))
-                      :phdata phdata})]
+                      :phdata (:phdata-env phdata)})]
     (reset! (:html-out @params) html-result)))
 
 (defn save-person []

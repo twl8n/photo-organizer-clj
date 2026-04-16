@@ -100,5 +100,3 @@ create table "vroll"
         latest_date text
         );
 
-
-

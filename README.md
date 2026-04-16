@@ -26,11 +26,9 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
-- P Add phdata to all pages and draw-* functions. Try to move management of phdata up to porg.core?
+- ! write a better quick description of the V5 state table in state.clj
 
-- Test person > new > cancel. I think it fails to render a web page.
-
-- When multiple people checked, Person > Edit should give a message that only one person can be edited. 
+- P Finish userid and auth token for login. Start using the user db table.
 
 - P Need to get rid of any http request specific atoms. They persist and would leak info between requests. This includes:
 
@@ -42,21 +40,42 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 User-specific, session-specific, persistent data can go into the db. Ephemeral request data should be local vars.
 
-- X create html-out atom in handler's let binding, pass it in :hmtl-out in the params, update
-  porg.state/html-out to use the supplied html-out atom. Convert params to also use an atom in the handler let
-  binding.
+- After edit person, person_pk does not stay chosen/checked. Must click checkbox before "choose this person".
 
-- P Add state data var, base64 encode and put in html for use on the next request.
+- 2026-03-20 Change places where {{name}} needs to be {{place_name}}
+- 2026-03-16 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
+- 2026-03-16  The symlink is hard coded, created manually. Should be in config, created by this app.
 
-- P want_place not carried through new. Maybe not edit?
+`;; The directory path is hard coded here, and should be in config.`
 
-- P State table needs explicit page name and (page? "foo") test for the dispatch. Fix long-standing confusion
-  over top level state sections, and individual keyword state tests. Maybe need (button? :s_cancel) or
-  (button? "s_cancel"). Clarify page-state and button-state.
+- 2026-03-16 Create thumbnails and decide if they will reside in the db (yes) or on disk in a parallel directory tree
 
-- P Finish userid and auth token for login. Start using the user db table.
+- 2026-03-16 Refactor state.clj for clarity and logical progression. 
 
-- X Upgrade
+- 2026-03-16 Condense and unify sql db connectors in state.clj
+
+- 2026-03-10 Fix that in-ns nonsense in machine. It wasn't necessary here, and is probably a red herring over there too.
+
+- update deps to recent versions
+
+- Physically rotate image files that have a virtual rotation. Not all software works properly with rotation meta
+data.
+
+- allow/require naked base url. Remove/change the regex match #".*/porg[/]*". Either redirect '/porg` or make
+  it like it never existed.
+
+- ? Is there any way that "back" works? Currently use s_save_choice
+
+```
+<input name="s_back" value="Back/Previous" type="submit">
+<br>
+[:s_back back-state :exit]
+```
+
+- Should place_pk always be place_pk, even in other tables where it is currently place_fk? Swapping context is
+  frustrating, but conflating context might be worse? Figure this out and fix the code.
+
+- When multiple people checked, Person > Edit should give a message that only one person can be edited. 
 
 - Need a "notes" field for table place.
 
@@ -69,6 +88,31 @@ User-specific, session-specific, persistent data can go into the db. Ephemeral r
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
 
+- X Add ability to edit photo > person > new person > choose person > back to photo.
+
+- X Need sql field "name" to only be used once. Change place.name to place.place_name with alter
+table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
+
+- X Edit person loses photo_pk and choose-this.
+
+- X State table needs explicit page name and (page? "foo") test for the dispatch. Fix long-standing confusion
+  over top level state sections, and individual keyword state tests. Maybe need (button? :s_cancel) or
+  (button? "s_cancel"). Clarify page-state and button-state.
+
+- X want_place not carried through new. Maybe not edit?
+
+- X Add state data var, base64 encode and put in html for use on the next request.
+
+- X 2026-04-16 Add phdata to all pages and draw-* functions. Move some management of phdata up to porg.core.
+
+- X (fixed) Test person > new > cancel. I think it fails to render a web page.
+
+- X create html-out atom in handler's let binding, pass it in :hmtl-out in the params, update
+  porg.state/html-out to use the supplied html-out atom. Convert params to also use an atom in the handler let
+  binding.
+
+- X Upgrade
+
 - X (ring supports ipv6 out of the box) Add ipv6
 
 ```
@@ -80,11 +124,6 @@ User-specific, session-specific, persistent data can go into the db. Ephemeral r
 ;; (def app  (rfm/wrap-allow-ips site-handler {:allow-list ["::1" "2001:db8::/32"]}))
 ```
     
-- Should place_pk always be place_pk, even in other tables where it is currently place_fk? Swapping context is
-  frustrating, but conflating context might be worse? Figure this out and fix the code.
-
-- P Edit person loses photo_pk and choose-this.
-
 - X Add Save + Previous photo button
 
 - X update the schema to allow linking person records for name changes.
@@ -106,20 +145,11 @@ alter table person add column is_primary integer;
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
 ```
 
-- ? Is there any way that "back" works? Currently use s_save_choice
-
-```
-<input name="s_back" value="Back/Previous" type="submit">
-<br>
-[:s_back back-state :exit]
-```
-
 - X Add "jump to" on start page.
-- P Add ability to edit photo > person > new person > choose person > back to photo.
 - X Add previous photo button
 - X Disable populate-db. That really needs to be a manual operation run from a repl or command line, but not web.
 
-- 2026-03-21 Did I try to compile the code before the nrepl was fully running? 
+- X 2026-03-21 (we will never know) Did I try to compile the code before the nrepl was fully running? 
 
 `java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null`
 
@@ -132,33 +162,7 @@ porg.core
 java.lang.NullPointerException: Cannot invoke "jdk.javadoc.internal.doclets.formats.html.HtmlConfiguration.getOptions()" because "this.configuration" is null
 ```
 
-- P 2026-03-20 Need sql field "name" to only be used once. Change place.name to place.place_name with alter
-table and code fixes: ALTER TABLE place RENAME COLUMN name TO place_name;
-- 2026-03-20 Change places where {{name}} needs to be {{place_name}}
-- 2026-03-16 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
-- 2026-03-16  The symlink is hard coded, created manually. Should be in config, created by this app.
-
-`;; The directory path is hard coded here, and should be in config.`
-
-- 2026-03-16 Create thumbnails and decide if they will reside in the db (yes) or on disk in a parallel directory tree
-
-- 2026-03-16 Refactor state.clj for clarity and logical progression. 
-
-- 2026-03-16 Condense and unify sql db connectors in state.clj
-
-- 2026-03-10 Fix that in-ns nonsense in machine. It wasn't necessary here, and is probably a red herring over there too.
-
-- update deps to recent versions
-
 - X Add an "open" call to open the browser automatically.
-
-- Physically rotate image files that have a virtual rotation. Not all software works properly with rotation meta
-data.
-
-- ! write a better quick description of the V5 state table in state.clj
-
-- allow/require naked base url. Remove/change the regex match #".*/porg[/]*". Either redirect '/porg` or make
-  it like it never existed.
 
 #### Quickstart:
 

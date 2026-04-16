@@ -1,6 +1,7 @@
 (ns porg.core
   (:require [porg.state :as state]
             [clojure.data.codec.base64 :as base64]
+            [clojure.tools.namespace.repl :refer [refresh]]
             [clojure.edn :as edn]
             [machine.core]
             [machine.util :refer :all]
@@ -30,39 +31,20 @@
 ;; A CGI param from multiple checkboxes will be a vector of strings.
 ;; A CGI param from input or single checkbox is a string.
 ;; This is a helper function to deal with it this aspect of CGI params.
-(defn trim-vec-or-string
-  "Trim trailing whitespace from CGI params. If vector, trim the strings in the vector. If just a string, trim the string"
-  [orig]
-  (if (instance? clojure.lang.PersistentVector orig)
-    (map #(clojure.string/trim %) orig)
-    (clojure.string/trim orig)))
-
-(def xrequest (atom {}))
-
-(comment
-  (defn aafn [foo]
-    (swap! foo #(assoc % :bar 1))
-    (printf "first: %s\n" @foo)
-    (swap! foo #(assoc % :zar 2))
-    (printf "second: %s\n" @foo)
-    @foo)
-  (let [bar (atom {})] (aafn bar))
-  )
 
 (def deb (atom ""))
 
-(comment
-  (def bbb
-    (let [d_state (porg.state/default-state) ;; (or (keyword (:d_state yy)) (porg.state/default-state))
-          html-out (atom "")]
-      (as-> @xrequest yy
-        (:form-params yy) ;; We only support POST requests now.
-        (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
-        (assoc yy :d_state d_state)
-        (assoc yy :html-out html-out))))
-  
-  ;; (assoc yy :xphdata (porg.state/wdecode (:phdata yy)))))
-  )
+(defn trim-vec-or-string
+  "Trim trailing whitespace from CGI params. If vector, trim the strings in the vector. If just a string, trim the string"
+  [orig]
+  (cond (instance? clojure.lang.PersistentVector orig) (map #(clojure.string/trim %) orig)
+        (string? orig) (clojure.string/trim orig)
+        :else orig))
+
+(def xrequest (atom {}))
+
+(defn keywordify [rmap]
+  (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} rmap))
 
 ;; Be specific that we only do dynamic requests to the /porg endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
@@ -82,9 +64,10 @@
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
                         (assoc yy :d_state d_state)
                         (assoc yy :html-out html-out)
-                        (assoc yy :phdata (porg.state/wdecode (:phdata yy)))
+                        (assoc yy :phdata (keywordify (porg.state/wdecode (:phdata yy))))
                         (atom yy))]
       (binding [porg.state/params temp-params]
+                ;; porg.state/phdata (:phdata @temp-params)]
         (machine.util/reset-state)
         (machine.util/reset-history)
         (machine.util/set-app-state @temp-params)
@@ -150,27 +133,35 @@
 ;; or the port might be 27161.
 
 ;; ipv6 supported out of the box. No changes were necessary.
-(defn make-app [& args]
+;; (defn make-app [& args]
+(def app
   (-> handler
       (local-wrap-ignore-favicon)
       (wrap-multipart-params)
       (wrap-file "image")
       (wrap-params)))
 
-;; Unclear how defonce and lein ring server headless will play together.
-(defn ds []
-  (defonce server (ringa/run-jetty (make-app) {:port rport :join? false})))
+(defonce server (atom nil))
 
-(comment
-  (shell/sh "open"
-            (format "http://localhost:%s/porg" rport))
-  (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
-            "--private-window"
-            (format "http://localhost:%s/porg" rport))
-  (shell/sh "open" "--args" "--private-window" "-u" (format "http://localhost:%s/porg" rport))
-  ;; 27161 or 8081
-  ;; open -a /bin/sh --args "-c" "/Applications/Firefox.app/Contents/MacOS/firefox -private-window http://localhost:8081/porg"
-  )
+(defn start-server []
+  (when-not @server
+    (reset! server (ringa/run-jetty #'app {:port rport :join? false}))
+    (printf "Server started on %s\n" rport)))
+
+(defn stop-server []
+  (when @server
+    (.stop @server)
+    (reset! server nil)
+    (printf "Server stopped\n")))
+
+(defn restart-server []
+  (stop-server)
+  (refresh :after 'porg.core/start-server))
+
+
+;; (defn ds []
+;;   (defonce server (ringa/run-jetty (make-app) {:port rport :join? false})))
+
 (defn -main
   "Parse the states.dat file."
   [& args]
@@ -180,9 +171,10 @@
   (print (format "%s\n" @porg.state/config))
   (print (state/test-config-data))
   (printf "Remember that @porg.core/xrequest has the entire http request.\n")
-  (ds)
-  (prn "server: " server)
-  (.start server)
+  ;; (ds)
+  ;; (prn "server: " server)
+  ;; (.start server)
+  (start-server)
   (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
             "--private-window"
             (format "http://localhost:%s/porg" rport)))
