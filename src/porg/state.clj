@@ -125,7 +125,7 @@
   [pk]
   (try (Integer. pk) (catch Exception e nil)))
 
-(if (and (some? {}) nil) true false)
+
 
 ;; Create a truly local phdata. Assume that porg.state/phdata has been bound to another var in porg.core/handler.
 ;; Try to update the photo_pk in phdata to be up-to-date.
@@ -133,7 +133,7 @@
   ([cparams]
    (phd-fn cparams {}))
   ([cparams add-map]
-   (let [userid (or (:userid (:userid phdata)) (:userid cparams))
+   (let [userid (or (not-empty (:userid (:phdata cparams))) (not-empty (:userid cparams)))
          new_ppk (:photo_pk @params)
          phd_ppk (if (number? (pk-helper (:photo_pk phdata))) (:photo_pk phdata) (:photo_pk (sql-firstnon db)))
          photo_pk (if (and (some? new_ppk) (sql-select-photo db {:photo_pk new_ppk})) new_ppk phd_ppk)
@@ -144,11 +144,16 @@
          phdata-enc (wencode phdata)]
      (assoc phdata :phdata-enc phdata-enc))))
 
+(defn get-helper [cparams kw]
+  (or
+   (not-empty (str (get (:phdata cparams) kw)))
+   (not-empty (str (get cparams kw)))))
+
 ;; :place_pk from the database is a number.
 ;; :place_fk from the html is a string.
 ;; Convert the db value wih (str) before comparing. 
 (defn place-checkbox-helper
-  "Get the list of all person, but transform elements to include :checked 'checked' for persons related to photo_pk"
+  "Get the list of all place, but transform elements to include :checked 'checked' for place related to photo_pk"
   ([photo_pk]
    (place-checkbox-helper photo_pk (or (:place_pk @params) (:place_fk @params))))
   ([photo_pk place_fk]
@@ -212,6 +217,7 @@
     (empty? (str thing)) true
     (keyword? thing) false
     (coll? thing) (some? (seq thing))
+    (number? thing) (= 0 thing)
     :else false)
   )
 
@@ -245,34 +251,19 @@
 (defn clear_continue []
   (swap! params #(dissoc % :continue)))
 
-(comment
-(def web-params
-  (let [photo_pk (if (number? (pk-helper (:photo_pk @params))) (:photo_pk @params) (:photo_pk (sql-firstnon db)))
-      photo-map (sql-select-photo db {:photo_pk photo_pk})
-      person-seq (person-checkbox-helper photo_pk)
-      pic_root_path (:pic_root_path (config-data))
-      all-place (place-checkbox-helper photo_pk (:place_fk photo-map))]
-  (merge {:userid (:userid @params)
-          :pic_root_path pic_root_path
-          :place_list all-place}
-         (dissoc @params :s_want_place)
-         photo-map
-         (sql-records-found db))))
-  )
-
 ;; Make sure we have a full photo record. Use the first non-updated record as a default
 (defn draw-start-page []
   (let [page_name "html/start_page.html"
         pic_root_path (:pic_root_path (config-data))
         phdata (phd-fn @params {:curr_page "s_start_page"})
-        photo_pk (or (pk-helper (:photo_pk @params)) (:photo_pk (sql-firstnon db)))
+        photo_pk (or (get-helper @params :photo_pk) (str (:photo_pk (sql-firstnon db))))
         userid (:userid phdata)
         photo-map (sql-select-photo db {:photo_pk photo_pk})
         all-place (place-checkbox-helper photo_pk (:place_fk photo-map))
         person-seq (person-checkbox-helper photo_pk)
         web-params (merge {:curr_page_state (:curr_page phdata)
                            :page_name page_name
-                           :userid userid
+                           ;; :userid userid
                            :pic_root_path pic_root_path
                            :place_list all-place
                            :debug (format "\nnew phdata %s\nold phdata %s\nuserid %s\nparams %s\n"
@@ -282,7 +273,7 @@
                                           (with-out-str (pp/pprint @params)))
                            :person_display (sql-select-photo-person db {:photo_fk photo_pk})
                            :phdata (:phdata-enc phdata)}
-                          (dissoc @params :s_want_place :phdata)
+                          ;; (dissoc @params :s_want_place :phdata)
                           photo-map
                           (sql-records-found db))
         html-result (my-render
@@ -291,24 +282,27 @@
     (reset! (:html-out @params) html-result)))
 
 ;; Use and 'or' so that this will work if @params is uninitialized.
-;; Assume that the previous photo_pk is in phdata, not params
+;; Assume that the current photo_pk is in phdata, not params.
 (defn next-photo []
-  (let [photo_pk (:photo_pk (:phdata @params))]
-    (set-params (merge @params
-                       (or (sql-next-photo db {:photo_pk photo_pk})
-                           (sql-firstnon db))))))
+  (let [photo_pk (:photo_pk (:phdata @params))
+        next_pk (:photo_pk (or (sql-next-photo db {:photo_pk photo_pk})
+                               (sql-firstnon db)))]
+    (set-params (assoc (assoc-in @params [:phdata :photo_pk] next_pk) :photo_pk next_pk))))
 
 (defn previous-photo
   "select the previous photo and wrap when at min fk. Return the first photo when something goes wrong."
   []
-  (set-params (merge @params
-                     (or (sql-previous-photo db {:photo_pk (:photo_pk @params)})
-                         (sql-firstnon db)))))
+  (let [photo_pk (:photo_pk (:phdata @params))
+        prev_pk (:photo_pk (or (sql-previous-photo db {:photo_pk photo_pk})
+                               (sql-firstnon db)))]
+    (set-params (assoc (assoc-in @params [:phdata :photo_pk] prev_pk) :photo_pk prev_pk))))
 
+;; jump_pk only comes from the http request, so look in @params
 (defn jump-to []
   (let [jump_pk (:jump_pk @params)]
     (if (number? (pk-helper jump_pk))
-      (set-params (merge @params {:photo_pk jump_pk}))
+      (set-params (assoc (assoc-in @params [:phdata :photo_pk] jump_pk) :photo_pk jump_pk))
+      ;;(set-params (merge @params {:photo_pk jump_pk}))
       nil)))
 
 ;; This could take several minutes to run. We won't have any feedback on the progress.
@@ -362,7 +356,7 @@
 
 ;; (if (not (empty?  (:userid phdata))) true false )
 (defn logged-in? []
-  (if (not (empty? (or (:userid @params) (:userid (:phdata @params)))))
+  (if (not (empty? (or (not-empty (:userid @params)) (not-empty (:userid (:phdata @params))))))
     true
     false))
 
@@ -417,7 +411,6 @@
     (reset! (:html-out @params) html-result)))
 
 (defn draw-edit-place []
-  (addmsg "draw-edit-place\n")
   (let [want_place (if (not-empty (:s_want_place @params))
                      {:want_place_val "place_button" :want_place_bool true}
                      nil)
@@ -562,26 +555,31 @@
         local_photo_pk (if (number? nn_photo_pk) nn_photo_pk (:photo_pk @params))]
     (set-params (assoc @params :photo_pk local_photo_pk))))
 
-;; 2026-03-22 Quick description of v5 state transition table format. Hashmap of state names Values in the hashmap are
-;; lists (of lists) of transitions for that state. Transition list is: state-key function-symbol-action next-state If
-;; state-key exists in data known to the state machine then true and perform the action. function-symbol-action is a
-;; function that performs an action presumably with side effects. It is tested for false, but true and nil are both true (to preserve
-;; legacy functions)
+;; 2026-04-16 Quick description of v5 state transition table format. The outer hashmap is state tables. Values
+;; in the hashmap is a single element vector of vectors which are transitions of the table. A transition vector
+;; is:
+;; - state-key or boolean function
+;; - function-symbol
+;; - other-table
 
-;; If the function returns true or nil, then transitionn to :other-state.
-;; If action returns false, continue to 
-;; iterate through transitions. State-key true is always true. If the :other-state (next state) is nil,
-;; continue to iterate over transitions.
+;; If state-key exists in data known to the state machine then true call the function function-symbol. The fn
+;; function-symbol performs an action with side effects. Its return value is tested for false, but true and
+;; nil are both true (to preserve legacy functions)
+
+;; If the function-symbol returns true or nil, then transition to the state table :other-table. If action
+;; returns false, continue to iterate through transitions. State-key :true is always true. If
+;; the :other-table is nil, continue to iterate over transitions.
 
 (comment
-  ;; This sort of describes the map of lists of lists that is the state table.
-  {:starting-default-state
-   [[:some-key some-fn-symbol :other-state]
-    [:true fn-symbol nil]
+  ;; This sort of describes the map of vector of vectors that are the state tables.
+  ;; While docs here often call this "the table", it is a map of state tables.
+  {:state-table-name
+   [[:key-or-fn some-fn-symbol-or-nil :state-table-or-nil]
+    [:true fn-symbol-a nil]
     [:some-other-key other-fn-symbol nil]
-    [:true fn-symbol nil]]
-   :other-state
-   [[:true side-effect-fn-b nil]
+    [:true fn-symbol-b nil]]
+   :other-table-name
+   [[:true side-effect-fn nil]
     [:true render-html-change-state nil]]}
   )
 
@@ -592,20 +590,8 @@
   (machine.util/check-infinite :test_config table)
   )
 
-;; 2026-03-20 We needed this last week, but now we don't. What changed??
-;; (declare draw-start-page)
-
 ;; Change the return value to be your default starting state. Was :test_conf
 (defn default-state [] :do_check_auth)
-
-;; 2026-03-18 check boolean state function and do things depending on true/false, like don't change to new state?
-;; Combine that with explicit exit or error cases?
-
-;; 2026-03-22 state-fn (the middle value) is tested for returning false. If false, will not transition to the third value.
-;; This behaviour preserves legacy function, but allows us to explicitly return false.
-
-;; next :do_* must be a keyword, probably also needs to exist in the table.
-;; nil is ok as a fn-symbol. 
 
 ;; two letter prefix/suffix to make every state test/keyword unique
 ;; :do_check_auth	ca
@@ -626,8 +612,7 @@
     [:true draw-login nil]]
 
    :do_dispatch
-   [[:true #(addmsg "hit disp\n") nil]
-    [:s_start_page nil :do_start_page]
+   [[:s_start_page nil :do_start_page]
     [:s_edit_person nil :do_edit_person]
     [:s_show_person nil :do_person_page]
     [:s_new_person nil :do_new_person]
@@ -640,8 +625,7 @@
     [:true draw-login nil]]
 
    :do_start_page
-   [[:true #(addmsg "do_start_page") nil]
-    [:s_jump jump-to nil]
+   [[:s_jump jump-to nil]
     [:s_edit draw-photo-page :exit]
     [:s_edit_nn edit-nn nil]
     [:s_edit_nn draw-photo-page :exit]

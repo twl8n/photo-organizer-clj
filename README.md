@@ -26,7 +26,9 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
-- ! write a better quick description of the V5 state table in state.clj
+- start page edit goes to first non-annotated, not photo_pk
+
+- need to add "important" flag to names and places to sort commonly used near the top.
 
 - P Finish userid and auth token for login. Start using the user db table.
 
@@ -87,6 +89,8 @@ data.
 - Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
+
+- X write a better quick description of the V5 state table in state.clj
 
 - X Add ability to edit photo > person > new person > choose person > back to photo.
 

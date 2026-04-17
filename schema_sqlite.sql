@@ -65,9 +65,11 @@ create table "person"
         );
 
 -- place where photo was taken
+-- 2026-04-16 alter table place add column place_desc text;
 create table "place"
     (
 	place_pk integer primary key autoincrement,
+        place_desc text,
         place_name text,
         street1 text,
         street2 text,

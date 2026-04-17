@@ -97,7 +97,7 @@ delete from photo_person where photo_fk = :photo_fk;
 insert into photo_person (photo_fk, person_fk) values (:photo_fk,:person_fk);
 
 -- :name sql-select-all-place :? :*
-select * from place order by place_pk;
+select * from place order by place_name;
 
 -- :name sql-update-pplace :! :n
 update photo set place_fk = :place_fk where photo_pk = :photo_pk;
@@ -106,12 +106,13 @@ update photo set place_fk = :place_fk where photo_pk = :photo_pk;
 select * from place where place_pk = :place_pk;
 
 -- :name sql-insert-place :! :n
-insert into place (place_name, street1, street2, city, state, zip_code, longitude, latitude)
-values (:place_name, :street1, :street2, :city, :state, :zip_code, :longitude, :latitude);
+insert into place (place_name, place_desc, street1, street2, city, state, zip_code, longitude, latitude)
+values (:place_name, :place_desc, :street1, :street2, :city, :state, :zip_code, :longitude, :latitude);
 
 -- :name sql-update-place :! :n
 update place
 set place_name = :place_name,
+    place_desc = :place_desc,
     street1 = :street1,
     street2 = :street2,
     city = :city,
