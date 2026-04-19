@@ -26,11 +26,22 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
-- start page edit goes to first non-annotated, not photo_pk
+- vvv remove lines commented out as a result of that fix below
 
-- need to add "important" flag to names and places to sort commonly used near the top.
+- show person selects people based on image from start page. Need to separate "show persons" and "choose
+  persons".
+
+- X fix everything to consistently call phd-fn, etc.
+
+- X start page edit goes to first non-annotated, not photo_pk
 
 - P Finish userid and auth token for login. Start using the user db table.
+
+- migrate from clojure/data/codec/base64 to something more portable, and compatible with babashka.
+
+https://gist.github.com/cnirrad/fa69722d1549246381039d188165335a
+
+- need to add "important" flag to names and places to sort commonly used near the top.
 
 - P Need to get rid of any http request specific atoms. They persist and would leak info between requests. This includes:
 

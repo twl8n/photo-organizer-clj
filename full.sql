@@ -54,7 +54,8 @@ select * from (
 
 -- :name sql-select-all-person :? :*
 -- :doc select all fields from the person table
-select * from person order by name asc;
+select * from person order by cast(sorting as number) desc, name asc;
+
 
 -- :name sql-related-person :? :*
 select * from person where
@@ -63,9 +64,9 @@ select * from person where
 -- :name sql-insert-person :! :n
 -- :doc insert a new person
 insert into person
-    (name, pdesc, birth_date, death_date, canonical_photo_fk, related_pk, is_primary)
+    (name, pdesc, birth_date, death_date, canonical_photo_fk, related_pk, is_primary, sorting)
     values
-    (:name, :pdesc, :birth_date, :death_date, :canonical_photo_fk, :related_pk, :is_primary);
+    (:name, :pdesc, :birth_date, :death_date, :canonical_photo_fk, :related_pk, :is_primary, :sorting);
 
 -- :name sql-update-person :! :n
 -- :doc update person
@@ -76,7 +77,8 @@ update person set
     death_date=:death_date,
     canonical_photo_fk=:canonical_photo_fk,
     related_pk=:related_pk,
-    is_primary=:is_primary
+    is_primary=:is_primary,
+    sorting=:sorting
 where person_pk=:person_pk;
 
 -- :name sql-select-person :? :1

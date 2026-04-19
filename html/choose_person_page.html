@@ -37,38 +37,35 @@
           margin-bottom: 0.25em;
       }
     </style>
-
   </head>
   <body bgcolor="#ffffff">
     <table border="0" cellpadding="3" cellspacing="0" width="800">
       <tbody>
         <tr>
           <td bgcolor="#99cccc" valign="top">
+            <form action="./porg" method="post">
+              <input name="{{curr_page_state}}" value="1" type="hidden">
+              <input name="phdata" value="{{phdata}}" type="hidden">
+              <input name="userid" value="{{userid}}" type="hidden">
+              <input name="page_name" value="{{page_name}}" type="hidden">
+              <input name="prev_state" value="{{pre_state}}" type="hidden">
+              <input name="photo_pk" value="{{photo_pk}}" type="hidden">
               <div>
-                <form action="./porg" method="post">
-                  <input name="{{curr_page_state}}" value="1" type="hidden">
-                  <input name="phdata" value="{{phdata}}" type="hidden">
-                  <input name="userid" value="{{userid}}" type="hidden">
-                  <input name="page_name" value="{{page_name}}" type="hidden">
-                  <input name="prev_state" value="{{pre_state}}" type="hidden">
-                  <input name="photo_pk" value="{{photo_pk}}" type="hidden">
-                  <input name="s_edit" value="Edit" type="submit">
-                  <input name="s_cancel" value="Cancel" type="submit">
-                  <input name="s_new" value="Add New" type="submit">
-                  <br>
-                  photo_pk {{photo_pk}}
-                  <br>
-                  <input name="s_edit_photo" value="Edit photo {{photo_pk}}" type="submit">
-                  <br>
-                  <article>
-                    {{#person_list}}
-                    <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}" {{checked}}>
-                    <label for="pid">{{name}} {{person_pk}} ({{sorting}})</label>
-                    <br>
-                    {{/person_list}}
-                  </article>
-                </form>
+                <input name="s_cancel" value="Cancel" type="submit">
+                <input name="choose_button" value="1" type="hidden">
+                <input name="s_save_choice" value="Chose this person(s)" type="submit">
+                <br>
+                photo_pk {{photo_pk}}
               </div>
+              <br>
+              <article>
+                {{#person_list}}
+                <input type="checkbox" id="pid" name="person_pk" value="{{person_pk}}" {{checked}}>
+                <label for="pid">{{name}} {{person_pk}} ({{sorting}})</label>
+                <br>
+                {{/person_list}}
+              </article>
+            </form>
           </td>
         </tr>
       </tbody>

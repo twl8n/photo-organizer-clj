@@ -51,7 +51,7 @@ create table "photo_person"
 
 -- a person found in at least one photo.
 -- Initially assumed a single canonical image. That assumption is probably wrong.
--- 
+-- alter table person add column sorting number;
 create table "person"
     (
 	person_pk integer primary key autoincrement,
@@ -61,7 +61,8 @@ create table "person"
         death_date text,
         canonical_photo_fk integer,
         related_pk integer,
-        is_primary integer -- 0 or 1
+        is_primary integer, -- 0 or 1
+        sorting number
         );
 
 -- place where photo was taken

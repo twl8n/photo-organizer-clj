@@ -13,7 +13,7 @@
   github-HealthSamurai/clostache {:git/url "https://github.com/HealthSamurai/clostache"
                                   :sha "fef301eb2cdc4c337f3240975d378d79f6f2b92a"}
 
-  ;; The original clostache, apparently will not fix.
+  ;; broken, original clostache, apparently will not fix.
   ;; de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
 
   org.clojure/java.jdbc {:mvn/version "0.7.5"}
@@ -23,7 +23,7 @@
   ;;                       :sha "fabdf3f8329cc8e25217bcee4a460b1fe8fb04c0"}
 
   ;; For base64 encoding
-  org.clojure/data.codec {:mvn/version "0.2.1"}
+  ;; org.clojure/data.codec {:mvn/version "0.2.1"}
 
   ;; used for the encrypt decrypt demo
   buddy/buddy-core {:mvn/version "1.10.0"}
@@ -33,7 +33,15 @@
   }
 
  :aliases 
- {;; clj -M:nREPL -m nrepl.cmdline
+ {
+  ;; Build-related, obviously. See build.clj.
+  ;; Run with clj -T:build uber
+  ;; Current as of 2026-01-12
+  ;; https://github.com/clojure/tools.build#release-information
+  :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.12" :git/sha "97c5562"}}
+          :ns-default build}
+
+  ;; clj -M:nREPL -m nrepl.cmdline
   :nREPL
   {:extra-deps
    {nrepl/nrepl {:mvn/version "1.5.2"}}}}

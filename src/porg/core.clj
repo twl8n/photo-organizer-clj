@@ -1,6 +1,5 @@
 (ns porg.core
   (:require [porg.state :as state]
-            [clojure.data.codec.base64 :as base64]
             [clojure.tools.namespace.repl :refer [refresh]]
             [clojure.edn :as edn]
             [machine.core]
@@ -65,6 +64,7 @@
                         (assoc yy :d_state d_state)
                         (assoc yy :html-out html-out)
                         (assoc yy :phdata (keywordify (porg.state/wdecode (:phdata yy))))
+                        (assoc yy (keyword (:curr_page (:phdata yy))) true)
                         (atom yy))]
       (binding [porg.state/params temp-params]
                 ;; porg.state/phdata (:phdata @temp-params)]
