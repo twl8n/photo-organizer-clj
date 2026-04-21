@@ -45,26 +45,38 @@
 (defn keywordify [rmap]
   (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} rmap))
 
+
+;; (:remote-addr request) :remote-addr address unchanged
+;; (get (:headers request) "user-agent") confirm user-agent unchanged
+;; (get (:headers request) "origin") origin unchanged
+
 ;; Be specific that we only do dynamic requests to the /porg endpoint.
-;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
-;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
+;; wrap-file will try to load static content aka a file.
+
 (defn handler
   [request]
   (reset! xrequest request) ;; keep this for future debugging?
   (if (not (some? (re-matches #".*/porg[/]*" (:uri request))))
     ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
-    (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]
-      ;; (print (format "uri: %s\n" (:uri request))) (flush)
+    (let [err-return {:status 404
+                      :headers {"Content-Type" "text/plain"}
+                      :body (format "Unknown request %.40s...\n%s\n"
+                                    (:uri request)
+                                    (with-out-str (pp/pprint request)))}]
       err-return)
     (let [d_state (porg.state/default-state) ;; (or (keyword (:d_state yy)) (porg.state/default-state))
           html-out (atom "")
+          session-data (str (:remote-addr request)
+                            (get (:headers request) "user-agent")
+                            (get (:headers request) "origin"))
           temp-params (as-> request yy
-                        (:form-params yy) ;; We only support POST requests now.
+                        (:form-params yy) ;; :form-params are POST requests
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
                         (assoc yy :d_state d_state)
                         (assoc yy :html-out html-out)
                         (assoc yy :phdata (keywordify (porg.state/wdecode (:phdata yy))))
                         (assoc yy (keyword (:curr_page (:phdata yy))) true)
+                        (assoc yy :session-data session-data)
                         (atom yy))]
       (binding [porg.state/params temp-params]
                 ;; porg.state/phdata (:phdata @temp-params)]
@@ -129,8 +141,17 @@
 ;; For the file: /Volumes/external/my-family/2023-08-29/DSC_0001.JPG
 ;; create a symbolic link: ln -s /Volumes/external/my-family/ image
 ;; call the middleware: (wrap-file "image")
-;; the working url is: http://localhost:8081/2023-08-29/DSC_0001.JPG
-;; or the port might be 27161.
+
+;; 2026-04-20 These URLs work:
+;; http://localhost:8081/2023-08-29/DSC_0001.JPG
+;; http://localhost:8081/person.css
+;; (assuming port is set to 8081)
+;; Did *not* work:
+(comment
+  (wrap-file "image")
+  (wrap-file "html")
+  )
+;; Unclear why order matters, and why it works when html precedes image.
 
 ;; ipv6 supported out of the box. No changes were necessary.
 ;; (defn make-app [& args]
@@ -138,6 +159,7 @@
   (-> handler
       (local-wrap-ignore-favicon)
       (wrap-multipart-params)
+      (wrap-file "html")
       (wrap-file "image")
       (wrap-params)))
 

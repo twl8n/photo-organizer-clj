@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Login</title>
+    <title>{{title}}</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body bgcolor="#ffffff">
@@ -11,17 +11,19 @@
           <input name="phdata" value="{{phdata}}" type="hidden">
           <input name="do_check_auth" value="1" type="hidden">
           <div style="text-align: left;">
+            {{message}}
             <table>
               <tr><td>Userid</td><td><input name="userid" value="" type="text" autofocus></td></tr>
-              <tr><td>Password</td><td><input name="password" value="" type="password"></td></tr>
+              <tr><td>Current Password</td><td><input name="oldpass" value="" type="password"></td></tr>
+              <tr><td>New Password</td><td><input name="newpass" value="" type="password"></td></tr>
             </table>
-            <input name="s_login" value="Login" type="submit">
+            <input name="cp_cancel" value="Cancel" type="submit">             <input name="cp_update" value="Update" type="submit">
           </div>
         </form>
       </div>
     </div>
     <br>
-    Template: login.html 
+    Template: {{}}
     <br>
     <pre>{{debug}}</pre>
     <script>

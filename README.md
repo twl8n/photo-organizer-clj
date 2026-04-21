@@ -26,22 +26,13 @@ Can Clojure read command line args? (Yes.) Use command line arg to switch to dev
 
 #### todo P=In Progress !=Important X=Completed
 
-- vvv remove lines commented out as a result of that fix below
+- create change password page
 
-- show person selects people based on image from start page. Need to separate "show persons" and "choose
-  persons".
+- add session info to phdata and check in logged-in?
 
-- X fix everything to consistently call phd-fn, etc.
+- X add sorting field to person 
 
-- X start page edit goes to first non-annotated, not photo_pk
-
-- P Finish userid and auth token for login. Start using the user db table.
-
-- migrate from clojure/data/codec/base64 to something more portable, and compatible with babashka.
-
-https://gist.github.com/cnirrad/fa69722d1549246381039d188165335a
-
-- need to add "important" flag to names and places to sort commonly used near the top.
+- add sorting field to places to sort commonly used near the top.
 
 - P Need to get rid of any http request specific atoms. They persist and would leak info between requests. This includes:
 
@@ -100,6 +91,19 @@ data.
 - Retain most recently viewed image. Maybe store most recent in db? rather than keeping web state.
 - Add user table (even without authentication) to keep user settings, history.
 - Add ability to mark image as duplicate, and link to other copies of same image.
+
+- X show person selects people based on image from start page. Need to separate "show persons" and "choose
+  persons".
+
+- X fix everything to consistently call phd-fn, etc.
+
+- X start page edit goes to first non-annotated, not photo_pk
+
+- X Finish userid and auth token for login. Start using the user db table.
+
+- X migrate from clojure/data/codec/base64 to something more portable, and compatible with babashka.
+
+https://gist.github.com/cnirrad/fa69722d1549246381039d188165335a
 
 - X write a better quick description of the V5 state table in state.clj
 

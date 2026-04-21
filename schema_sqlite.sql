@@ -6,20 +6,20 @@ create table "config"
         name text,
         value text
 );
+-- insert into config (name,value)
+-- values ("test", 12345);
 
 create table "user"
     (
         user_pk integer primary key autoincrement,
         user_name text,
+        digest text,
         uuid text,
         photo_pk integer,
         client_ip_addr text
 );
-insert into config (name,value)
-values ("test", 12345);
 
 -- GIS?
-
 -- This is an individual photo record.
 -- photo_pk used a foreign key in vroll_order linking table
 -- photo_pk used a foreign key in photo_person linking table

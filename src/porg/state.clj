@@ -1,5 +1,6 @@
 (ns porg.state
-  (:require [clojure.string :as str]
+  (:require [porg.security]
+            [clojure.string :as str]
             [clojure.edn :as edn]
             [machine.core]
             [machine.util]
@@ -83,9 +84,19 @@
    (clostache/render template data)
    #"[\\]{1}(.)" "$1"))
 
-;; 2026-03-16 user code below this line.
+(defn new-user [user_name pass]
+  (let [pdigest ((porg.security/pw-digest "SHA-256" 16 10000) pass)]
+    (sql-insert-user db {:user_name user_name :digest pdigest})))
 
-;; (str/trim (:out (shell/sh "uuidgen")))
+(defn update-digest [user_name pass]
+  (let [pdigest ((porg.security/pw-digest "SHA-256" 16 10000) pass)]
+    (sql-update-digest db {:user_name user_name :digest pdigest})))
+
+(defn check-pass [user_name chkpass]
+  (let [umap (sql-select-user db {:user_name user_name})]
+    ((porg.security/pw-verify "SHA-256" 16 10000) chkpass (:digest umap))))
+
+;; 2026-03-16 user code below this line.
 
 (defn get_wh [full_name]
   (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
@@ -128,6 +139,11 @@
   [pk]
   (try (Integer. pk) (catch Exception e nil)))
 
+(defn userid-helper
+  "Standard way to get the userid"
+  [cparams]
+  (or (not-empty (:userid (:phdata cparams))) (not-empty (:userid cparams))))
+
 ;; Create a truly local phdata. Assume that porg.state/phdata has been bound to another var in porg.core/handler.
 ;; Try to update the photo_pk in phdata to be up-to-date.
 ;; new_ppk is new in the sense of "new in the http request". phdata is "old" in that sense.
@@ -135,14 +151,16 @@
   ([cparams]
    (phd-fn cparams {}))
   ([cparams add-map]
-   (let [userid (or (not-empty (:userid (:phdata cparams))) (not-empty (:userid cparams)))
-         new_ppk (:photo_pk @params) 
+   (let [userid (userid-helper cparams)
+         uuid (:uuid (:phdata cparams))
+         new_ppk (:photo_pk cparams) 
          phd_ppk (let [tppk (:photo_pk (:phdata cparams))]
                    (if (number? (pk-helper tppk))
                      tppk
                      (:photo_pk (sql-firstnon db))))
          photo_pk (if (and (some? new_ppk) (sql-select-photo db {:photo_pk new_ppk})) new_ppk phd_ppk)
          phdata (merge add-map {:userid userid
+                                :uuid uuid
                                 :d_state :do_check_auth
                                 :photo_pk photo_pk})
          phdata-enc (wencode phdata)]
@@ -299,7 +317,6 @@
   (let [jump_pk (:jump_pk @params)]
     (if (number? (pk-helper jump_pk))
       (set-params (assoc (assoc-in @params [:phdata :photo_pk] jump_pk) :photo_pk jump_pk))
-      ;;(set-params (merge @params {:photo_pk jump_pk}))
       nil)))
 
 ;; This could take several minutes to run. We won't have any feedback on the progress.
@@ -364,11 +381,81 @@
 (defn have-place-pk? []
   (contains? @params :place_pk))
 
-;; (if (not (empty?  (:userid phdata))) true false )
-(defn logged-in? []
-  (if (not (empty? (or (not-empty (:userid @params)) (not-empty (:userid (:phdata @params))))))
-    true
-    false))
+(defn logged-in?
+  "Must be practically idempotent because it is called twice."
+  []
+  (let [userid (or (:userid (:phdata @params)) (:userid @params))
+        db-uuid (:uuid (sql-select-user db {:user_name userid}))
+        web-uuid (:uuid (:phdata @params))
+        password (str (:password @params)) ;; nil password bad, empty string ok
+        urec (sql-select-user db {:user_name userid})
+        passok (check-pass userid password)
+        _ (set-params (dissoc @params  :password))]
+    (cond (and (some? web-uuid) (= web-uuid db-uuid)) true
+          passok (let [new-uuid (.toString (java.util.UUID/randomUUID))]
+                   (sql-update-user-uuid db {:user_name userid :uuid new-uuid})
+                   (set-params (assoc-in @params  [:phdata :uuid] new-uuid))
+                   true)
+          :else false)))
+
+(defn newpass_ok?
+  "New has more than 7 chars, new must not equal old, old must validate. Must be idempotent so we can call multiple times."
+  []
+  (let [oldpass (:oldpass @params)
+        newpass (:newpass @params)
+        user_name (userid-helper @params)
+        lt8 (< 8 (count newpass))
+        different (not= oldpass newpass)
+        is-ok (check-pass user_name oldpass)
+        message (str (when (not lt8) "New password must be longer than 7 characters. ")
+                     (when (not different) "New must be different from current. ")
+                     (when (not is-ok) "Old password incorrect. ")
+                     (when (and lt8 different is-ok) "Password updated. "))]
+    (set-params (assoc @params :message message))
+    (and lt8 different is-ok)))
+
+(defn save-pass
+  "Double check the password before updating."
+  []
+  (let [newpass (:newpass @params)
+        user_name (userid-helper @params)]
+    (when (newpass_ok?)
+      (update-digest user_name newpass))))
+
+(defn draw-change-pass []
+  (let [page_name "html/change_pass.html"
+        title "Change Password"
+        phdata (phd-fn @params {:curr_page "go_change_pass"})
+        userid (:userid phdata)
+        html-result (my-render (slurp page_name)
+                               {:do_check_auth 1
+                                :title title
+                                :page_name page_name
+                                :message (str (:message @params))
+                                :debug (format "\nparams:\n%s\n"
+                                               (with-out-str (pp/pprint @params)))
+                                :phdata (:phdata-enc phdata)})]
+    (reset! (:html-out @params) html-result)))
+
+(defn draw-confirm-page []
+  (let [page_name "html/confirm.html"
+        title "Confirm Password Update"
+        phdata (phd-fn @params {:curr_page "go_confirm"})
+        userid (:userid phdata)
+        html-result (my-render (slurp page_name)
+                               {:do_check_auth 1
+                                :title title
+                                :page_name page_name
+                                :message (str (:message @params))
+                                :debug (format "\nphdata %s\nold phdata %s\nparams:\n%s\n"
+                                               (str phdata)
+                                               (str (:phdata @params))
+                                               (with-out-str (pp/pprint @params)))
+                                :phdata (:phdata-enc phdata)})]
+    (reset! (:html-out @params) html-result)))
+
+;; (defn draw-pass-fail []
+;;   (draw-change-pass "Password update failed. Please try again."))
 
 (defn nil_person_pk? []
   (if (not (empty?  (:person_pk @params)))
@@ -381,15 +468,15 @@
         userid (:userid phdata)
         html-result (my-render (slurp page_name)
                                {:do_check_auth 1
-                                :debug (format "\nphdata %s\nold phdata %s\nuserid %s\n"
+                                :debug (format "\nphdata %s\nold phdata %s\nparams:\n%s\n"
                                                (str phdata)
                                                (str (:phdata @params))
-                                               userid)
+                                               (with-out-str (pp/pprint @params)))
                                 :phdata (:phdata-enc phdata)})]
     (reset! (:html-out @params) html-result)))
 
 (defn logout []
-  (set-params (dissoc @params :userid))
+  (set-params (assoc-in @params  [:phdata :uuid] ""))
   true)
 
 ;; We can come here from start page or photo page, so we might have place_pk or place_fk.
@@ -610,7 +697,10 @@
     [:true draw-login nil]]
 
    :do_dispatch
-   [[:s_start_page nil :do_start_page]
+   [[:s_logout logout nil]
+    [:s_logout draw-login :exit]
+    [:go_change_pass nil :do_change_pass]
+    [:s_start_page nil :do_start_page]
     [:s_edit_person nil :do_edit_person]
     [:s_show_person nil :do_person_page]
     [:on_choose_person nil :do_choose_person_page]
@@ -622,6 +712,19 @@
     [:s_new_place nil :do_new_place]
     [logged-in? draw-start-page :exit]
     [:true draw-login nil]]
+
+   :do_change_pass
+   [[:cp_update nil :do_update_pass]
+    [:cp_cancel draw-start-page :exit]
+    [:true draw-change-pass nil]]
+
+   :do_update_pass
+   [[newpass_ok? save-pass :do_confirm]
+    [:true draw-change-pass :exit]]
+
+   :do_confirm
+   [[:co_ok draw-start-page :exit]
+    [:true draw-confirm-page nil]]
 
    :do_start_page
    [[:s_jump jump-to nil]

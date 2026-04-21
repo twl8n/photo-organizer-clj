@@ -123,3 +123,15 @@ set place_name = :place_name,
     longitude = :longitude,
     latitude = :latitude
 where place_pk = :place_pk;
+
+-- :name sql-insert-user :! :n
+insert into user (user_name,digest) values (:user_name, :digest);
+
+-- :name sql-update-digest :! :n
+update user set digest=:digest where user_name=:user_name;
+
+-- :name sql-select-user :? :1
+select * from user where user_name = :user_name;
+
+-- :name sql-update-user-uuid :! :n
+update user set uuid=:uuid where user_name=:user_name;
