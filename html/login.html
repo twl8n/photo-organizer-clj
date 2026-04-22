@@ -9,7 +9,6 @@
       <div class="pane1">
         <form action="./porg" method="post">
           <input name="phdata" value="{{phdata}}" type="hidden">
-          <input name="do_check_auth" value="1" type="hidden">
           <div style="text-align: left;">
             <table>
               <tr><td>Userid</td><td><input name="userid" value="" type="text" autofocus></td></tr>
@@ -21,7 +20,7 @@
       </div>
     </div>
     <br>
-    Template: login.html 
+    Template: {{page_name}}
     <br>
     <pre>{{debug}}</pre>
     <script>

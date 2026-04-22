@@ -161,7 +161,6 @@
          photo_pk (if (and (some? new_ppk) (sql-select-photo db {:photo_pk new_ppk})) new_ppk phd_ppk)
          phdata (merge add-map {:userid userid
                                 :uuid uuid
-                                :d_state :do_check_auth
                                 :photo_pk photo_pk})
          phdata-enc (wencode phdata)]
      (assoc phdata :phdata-enc phdata-enc))))
@@ -428,8 +427,7 @@
         phdata (phd-fn @params {:curr_page "go_change_pass"})
         userid (:userid phdata)
         html-result (my-render (slurp page_name)
-                               {:do_check_auth 1
-                                :title title
+                               {:title title
                                 :page_name page_name
                                 :message (str (:message @params))
                                 :debug (format "\nparams:\n%s\n"
@@ -443,8 +441,7 @@
         phdata (phd-fn @params {:curr_page "go_confirm"})
         userid (:userid phdata)
         html-result (my-render (slurp page_name)
-                               {:do_check_auth 1
-                                :title title
+                               {:title title
                                 :page_name page_name
                                 :message (str (:message @params))
                                 :debug (format "\nphdata %s\nold phdata %s\nparams:\n%s\n"
@@ -467,7 +464,7 @@
         phdata (phd-fn @params {:curr_page "s_login_page"})
         userid (:userid phdata)
         html-result (my-render (slurp page_name)
-                               {:do_check_auth 1
+                               {:page_name page_name
                                 :debug (format "\nphdata %s\nold phdata %s\nparams:\n%s\n"
                                                (str phdata)
                                                (str (:phdata @params))
@@ -675,7 +672,7 @@
   (machine.util/check-infinite :test_config table)
   )
 
-;; Change the return value to be your default starting state. Was :test_conf
+;; Change the return value to be the default starting state. Was :test_conf
 (defn default-state [] :do_check_auth)
 
 ;; two letter prefix/suffix to make every state test/keyword unique

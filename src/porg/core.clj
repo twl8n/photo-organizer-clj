@@ -64,26 +64,23 @@
                                     (:uri request)
                                     (with-out-str (pp/pprint request)))}]
       err-return)
-    (let [d_state (porg.state/default-state) ;; (or (keyword (:d_state yy)) (porg.state/default-state))
-          html-out (atom "")
+    (let [html-out (atom "")
           session-data (str (:remote-addr request)
                             (get (:headers request) "user-agent")
                             (get (:headers request) "origin"))
           temp-params (as-> request yy
                         (:form-params yy) ;; :form-params are POST requests
                         (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
-                        (assoc yy :d_state d_state)
                         (assoc yy :html-out html-out)
                         (assoc yy :phdata (keywordify (porg.state/wdecode (:phdata yy))))
                         (assoc yy (keyword (:curr_page (:phdata yy))) true)
                         (assoc yy :session-data session-data)
                         (atom yy))]
       (binding [porg.state/params temp-params]
-                ;; porg.state/phdata (:phdata @temp-params)]
         (machine.util/reset-state)
         (machine.util/reset-history)
         (machine.util/set-app-state @temp-params)
-        (let [res (machine.util/traverse (:d_state @temp-params) porg.state/table machine.util/if-arg)]
+        (let [res (machine.util/traverse (porg.state/default-state) porg.state/table machine.util/if-arg)]
           (when res (prn res))))
 
       ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
