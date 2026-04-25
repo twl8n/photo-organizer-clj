@@ -13,8 +13,6 @@
             [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [clojure.java.shell :as shell])
   (:gen-class))
-;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-;; (def true-ns (ns-name *ns*))
 
 ;; commonly 8080 or 8081
 ;; ports 27161 thru 27169 are directtv and might be open on most home routers.
@@ -50,66 +48,52 @@
 ;; (get (:headers request) "user-agent") confirm user-agent unchanged
 ;; (get (:headers request) "origin") origin unchanged
 
-;; Be specific that we only do dynamic requests to the /porg endpoint.
+;; Use the /porg endpoint.
 ;; wrap-file will try to load static content aka a file.
 
 (defn handler
   [request]
   (reset! xrequest request) ;; keep this for future debugging?
-  (if (not (some? (re-matches #".*/porg[/]*" (:uri request))))
-    ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
-    (let [err-return {:status 404
-                      :headers {"Content-Type" "text/plain"}
-                      :body (format "Unknown request %.40s...\n%s\n"
-                                    (:uri request)
-                                    (with-out-str (pp/pprint request)))}]
-      err-return)
-    (let [html-out (atom "")
-          session-data (str (:remote-addr request)
-                            (get (:headers request) "user-agent")
-                            (get (:headers request) "origin"))
-          temp-params (as-> request yy
-                        (:form-params yy) ;; :form-params are POST requests
-                        (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
-                        (assoc yy :html-out html-out)
-                        (assoc yy :phdata (keywordify (porg.state/wdecode (:phdata yy))))
-                        (assoc yy (keyword (:curr_page (:phdata yy))) true)
-                        (assoc yy :session-data session-data)
-                        (atom yy))]
-      (binding [porg.state/params temp-params]
-        (machine.util/reset-state)
-        (machine.util/reset-history)
-        (machine.util/set-app-state @temp-params)
-        (let [res (machine.util/traverse (porg.state/default-state) porg.state/table machine.util/if-arg)]
-          (when res (prn res))))
+  ;; Don't check (:uri request) since 404 doesn't have clear meaning here.
+  ;; 404 loads the login page.
+  (let [html-out (atom "")
+        session-data (str (:remote-addr request)
+                          (get (:headers request) "user-agent")
+                          (get (:headers request) "origin"))
+        temp-params (as-> request yy
+                      (:form-params yy) ;; :form-params are POST requests
+                      (reduce-kv #(assoc %1 (keyword %2) (trim-vec-or-string %3)) {} yy)
+                      (assoc yy :html-out html-out)
+                      (assoc yy :phdata (keywordify (state/wdecode (:phdata yy))))
+                      (assoc yy (keyword (:curr_page (:phdata yy))) true)
+                      (assoc yy :session-data session-data)
+                      (atom yy))]
+    (binding [state/params temp-params]
+      (machine.util/reset-state)
+      (machine.util/reset-history)
+      (machine.util/set-app-state @temp-params)
+      (let [res (machine.util/traverse (state/default-state) state/table machine.util/if-arg)]
+        (when res (prn res))))
 
-      ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
-      ;; uri back to what we want, clearing any anchor/id values, and any other cruft.
-      ;; NOTE: "./porg" just creates a mess, post-pending "/porg" on the uri. 
-      {:status 200
-       :headers {"Location" "/porg" "Content-Type" "text/html"}
-       :body @html-out})))
-
-(comment
-  ;; This might not be what we want to fix a uri.
-  (-> (ringu/redirect requri)
-      (assoc :session new-session)
-      (assoc :headers {"Content-Type" "text/html"}))
-  )
+    ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
+    ;; uri back to what we want, clearing any anchor/id values, and any other cruft.
+    ;; NOTE: "./porg" just creates a mess, post-pending "/porg" on the uri. 
+    {:status 200
+     :headers {"Location" "/porg" "Content-Type" "text/html"}
+     :body @html-out}))
 
 (defn get-conf [ckey]
-  (ckey @porg.state/config))
+  (ckey @state/config))
 
 ;; Ignore favicon.ico
 ;; Name prefix local- to distinguish it from ring.middleware
 ;; (local-wrap-ignore-favicon [handler]
-;;
+
 (defn local-wrap-ignore-favicon [handler]
   (fn [request]
     (if (= (:uri request) "/favicon.ico")
       {:status 404}
       (handler request))))
-
 
 ;; Note: wrap-file is not quite cooked. For the URL "http://host/foo" it returns the
 ;; file "some-path/foo/index.html", the URI is not ".../" or ".../index.html" and all the relative links in
@@ -130,10 +114,6 @@
 ;; We need to dynamically discover the export path at run time, NOT compile time, therefor we must
 ;; use defn and not def (as you will see in every other ring server example). 
 
-;; 2025-04-11 We aren't using the export path now, maybe never
-      ;; (wrap-file (get-conf :export-path) {:allow-symlinks? true
-      ;;                                     :prefer-handler? true})
-
 ;; symbolic links work with wrap-file.
 ;; For the file: /Volumes/external/my-family/2023-08-29/DSC_0001.JPG
 ;; create a symbolic link: ln -s /Volumes/external/my-family/ image
@@ -143,15 +123,12 @@
 ;; http://localhost:8081/2023-08-29/DSC_0001.JPG
 ;; http://localhost:8081/person.css
 ;; (assuming port is set to 8081)
-;; Did *not* work:
-(comment
-  (wrap-file "image")
-  (wrap-file "html")
-  )
-;; Unclear why order matters, and why it works when html precedes image.
 
 ;; ipv6 supported out of the box. No changes were necessary.
-;; (defn make-app [& args]
+
+;; Unclear why order matters, and why it works when html precedes image.
+;; (wrap-file "html") must come before (wrap-file "image")
+
 (def app
   (-> handler
       (local-wrap-ignore-favicon)
@@ -177,22 +154,13 @@
   (stop-server)
   (refresh :after 'porg.core/start-server))
 
-
-;; (defn ds []
-;;   (defonce server (ringa/run-jetty (make-app) {:port rport :join? false})))
-
 (defn -main
-  "Parse the states.dat file."
+  "Launch the server, then open the default web page."
   [& args]
-  ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-  ;; (in-ns true-ns)
-  (porg.state/set-config (read-config))
-  (print (format "%s\n" @porg.state/config))
+  (state/set-config (read-config))
+  (print (format "%s\n" @state/config))
   (print (state/test-config-data))
   (printf "Remember that @porg.core/xrequest has the entire http request.\n")
-  ;; (ds)
-  ;; (prn "server: " server)
-  ;; (.start server)
   (start-server)
   (shell/sh "/Applications/Firefox.app/Contents/MacOS/firefox"
             "--private-window"

@@ -6,8 +6,8 @@
             [machine.util]
             [clojure.set]
             [clojure.java.io :as io]
-            [clojure.java.shell :as shell]
             [clojure.java.jdbc :as jdbc]
+            [clojure.java.shell :as shell]
             [clostache.parser :as clostache]
             [clojure.pprint :as pp]
             [hugsql.core :as hugsql]))
@@ -24,14 +24,13 @@
 
 ;; System wide config, with some defaults.
 (def config 
-  (atom {:export-path (System/getenv "HOME")
-         :db-path (System/getenv "HOME")}))
+  (atom {:db-path (System/getenv "HOME")}))
 
 ;; I think db is a "connection"
 (def db {:dbtype "sqlite" :dbname (format "%s/porg.db" (:db-path @config))})
 
 (defn set-config
-  "Arg is a map. We need :export-path, :db-path. Override compile time defaults by calling read-config at runtime."
+  "Arg is a map. We need :db-path. Override compile time defaults by calling read-config at runtime."
   [new-config]
   (reset! config new-config))
 
@@ -40,13 +39,11 @@
 (when (resolve 'porg.core/init-config)
   (set-config ((eval (resolve 'porg.core/init-config)))))
 
-;; (String. (base64/encode (.getBytes (prn-str enc-me))))
 (defn wencode
   "base64 encode for web html"
   [enc-me]
   (String. (.encode (java.util.Base64/getEncoder) (.getBytes (prn-str enc-me)))))
 
-;; (edn/read-string (String. (base64/decode (.getBytes dec-me))))
 (defn wdecode
   "base64 decode and return encoded data"
   [dec-me]
@@ -78,7 +75,7 @@
     (sql-config db))
 
 ;; Work around a feature (or bug) in clostache that turns $ into \$ and \ into \\
-;; but only in data fields.
+;; but only inside data fields.
 (defn my-render [template data]
   (str/replace
    (clostache/render template data)
@@ -97,11 +94,6 @@
     ((porg.security/pw-verify "SHA-256" 16 10000) chkpass (:digest umap))))
 
 ;; 2026-03-16 user code below this line.
-
-(defn get_wh [full_name]
-  (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
-                                      (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
-    [(Integer. width) (Integer. height)]))
 
 ;; Remove leading part of the full path, creating a "path" that is relavtive to the "image" symlink.
 ;; The symlink is hard coded, created manually. Should be in config, created by this app.
@@ -144,9 +136,11 @@
   [cparams]
   (or (not-empty (:userid (:phdata cparams))) (not-empty (:userid cparams))))
 
-;; Create a truly local phdata. Assume that porg.state/phdata has been bound to another var in porg.core/handler.
+;; Create a truly local phdata in porg.core. Assume that porg.state/phdata has been bound to another var in
+;; porg.core/handler.
 ;; Try to update the photo_pk in phdata to be up-to-date.
 ;; new_ppk is new in the sense of "new in the http request". phdata is "old" in that sense.
+
 (defn phd-fn
   ([cparams]
    (phd-fn cparams {}))
@@ -235,8 +229,7 @@
     (keyword? thing) false
     (coll? thing) (some? (seq thing))
     (number? thing) (= 0 thing)
-    :else false)
-  )
+    :else false))
 
 ;; In a photo page context, photo_pk is the param key. Copy it to :place_fk for the SQL.
 (defn save-photo []
@@ -295,7 +288,7 @@
                      web-params)]
     (reset! (:html-out @params) html-result)))
 
-;; Use and 'or' so that this will work if @params is uninitialized.
+;; Use 'or' so that this will work if @params is uninitialized.
 ;; Assume that the current photo_pk is in phdata, not params.
 (defn next-photo []
   (let [photo_pk (:photo_pk (:phdata @params))
@@ -322,8 +315,6 @@
 ;; Probably better to run it manually outside the app.
 (defn all-pic-files []
   (shell/sh "./pic-list.sh"))
-
-(defn noop [] true)
 
 (defn draw-person-page []
   (let [;; person-seq (person-checkbox-helper (:photo_pk @params))
@@ -450,9 +441,6 @@
                                                (with-out-str (pp/pprint @params)))
                                 :phdata (:phdata-enc phdata)})]
     (reset! (:html-out @params) html-result)))
-
-;; (defn draw-pass-fail []
-;;   (draw-change-pass "Password update failed. Please try again."))
 
 (defn nil_person_pk? []
   (if (not (empty?  (:person_pk @params)))
